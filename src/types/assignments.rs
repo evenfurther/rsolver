@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use super::*;
 
+#[allow(dead_code)]
 const PINNING_BONUS: i32 = 1000;
 
 #[derive(Debug)]
@@ -83,6 +84,10 @@ impl Assignments {
             .iter()
             .filter_map(|(p, b)| if *b >= PINNING_BONUS { Some(*p) } else { None })
             .collect()
+    }
+
+    pub fn is_pinned(&self, student: StudentId, project: ProjectId) -> bool {
+        self.bonuses(student).get(&project).map_or(false, |b| *b >= PINNING_BONUS)
     }
 
     pub fn assign_to(&mut self, student: StudentId, project: ProjectId) {
