@@ -17,12 +17,17 @@ fn solve_overflow_to_rank(a: &mut Assignments, rank: usize, rng: &mut Box<Rng>) 
     if overflowing_projects.is_empty() {
         return false;
     }
-    println!("Overflowing projects at rank {}: {}", rank, overflowing_projects.len());
+    println!("Overflowing projects at rank {}: {}",
+             rank,
+             overflowing_projects.len());
     for p in overflowing_projects.clone() {
         println!("  - {}", a.project(p).name);
     }
-    let mut overflowing_students =
-        overflowing_projects.into_iter().flat_map(|p| a.students_for(p)).filter(|&s| !a.is_currently_pinned(*s)).cloned().collect::<Vec<_>>();
+    let mut overflowing_students = overflowing_projects.into_iter()
+        .flat_map(|p| a.students_for(p))
+        .filter(|&s| !a.is_currently_pinned(*s))
+        .cloned()
+        .collect::<Vec<_>>();
     println!("Potential students to move: {}", overflowing_students.len());
     rng.shuffle(&mut overflowing_students);
     for student in overflowing_students {
