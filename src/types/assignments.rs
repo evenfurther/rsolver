@@ -146,7 +146,7 @@ impl Assignments {
         self.unassign_from(student, project);
     }
 
-    pub fn clear(&mut self, project: ProjectId) {
+    pub fn clear_assignments_for(&mut self, project: ProjectId) {
         for student in self.students_for(project).clone() {
             self.unassign_from(student, project);
         }
@@ -203,5 +203,10 @@ impl Assignments {
 
     pub fn missing(&self, project: ProjectId) -> usize {
         self.min_students(project) - self.size(project)
+    }
+
+    pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
+        assert!(!self.is_cancelled(project), "a cancelled project cannot host anything");
+        self.project(project).can_host()
     }
 }

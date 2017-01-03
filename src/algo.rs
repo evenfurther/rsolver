@@ -45,11 +45,13 @@ fn solve_overflow_to_rank(a: &mut Assignments, rank: usize, rng: &mut Box<Rng>) 
     true
 }
 
-fn complete_incomplete_projects(a: &mut Assignments, rng: &mut Box<Rng>) {
+fn complete_projects_under_capacity(a: &mut Assignments, rng: &mut Box<Rng>) {
     let mut projects = a.filter_projects(|p| a.is_under_capacity(p));
     projects.sort_by_key(|&p| (a.missing(p), -(a.size(p) as i32)));
     let mut students = a.unassigned_students();
     rng.shuffle(&mut students);
+    println!("Completing {} projects under minimum capacity with {} unassigned students",
+             projects.len(), students.len());
     let mut students = students.into_iter();
     for project in projects {
         while a.is_under_capacity(project) {
@@ -71,5 +73,5 @@ pub fn assign(a: &mut Assignments) {
             break;
         }
     }
-    complete_incomplete_projects(a, &mut rng);
+    complete_projects_under_capacity(a, &mut rng);
 }
