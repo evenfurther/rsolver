@@ -1,11 +1,14 @@
 extern crate ini;
 #[macro_use]
 extern crate mysql;
+extern crate rand;
 
+use algo::*;
 use ini::Ini;
 use loaders::*;
 use types::*;
 
+mod algo;
 mod loaders;
 mod types;
 
@@ -17,10 +20,6 @@ fn main() {
         other => panic!("unknown loader {}", other),
     };
     let (students, projects) = loader.load(&conf).unwrap();
-    for s in students {
-        println!("{:#?}", s);
-    }
-    for p in projects {
-        println!("Project {:?}: {}", p.id, p.name);
-    }
+    let mut assignments = Assignments::new(students, projects);
+    assign(&mut assignments);
 }

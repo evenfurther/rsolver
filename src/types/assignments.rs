@@ -55,6 +55,25 @@ impl Assignments {
         &self.projects[project]
     }
 
+    pub fn all_projects(&self) -> Vec<ProjectId> {
+        self.filter_projects(|_| true)
+    }
+
+    pub fn filter_projects<F>(&self, condition: F) -> Vec<ProjectId>
+        where F: Fn(ProjectId) -> bool
+    {
+        (0..self.projects.len())
+            .filter_map(|project| {
+                let project = ProjectId(project);
+                if condition(project) {
+                    Some(project)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     pub fn rankings(&self, student: StudentId) -> &Vec<ProjectId> {
         &self.student(student).rankings
     }

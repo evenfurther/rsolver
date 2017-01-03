@@ -3,6 +3,7 @@ name = "rsolver"
 version = "0.1.0"
 dependencies = [
  "mysql 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-ini 0.9.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
