@@ -50,14 +50,14 @@ fn load_projects(pool: &my::Pool) -> Result<Vec<Project>, String> {
 }
 
 fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
-    pool.prep_exec("SELECT id, nom FROM eleves", ())
+    pool.prep_exec("SELECT id, nom, prenom FROM eleves", ())
         .map(|result| {
             result.map(|x| x.unwrap())
                 .map(|row| {
-                    let (id, name) = my::from_row(row);
+                    let (id, last_name, first_name): (usize, String, String) = my::from_row(row);
                     Student {
                         id: id,
-                        name: name,
+                        name: format!("{} {}", first_name, last_name),
                         rankings: Vec::new(),
                         bonuses: HashMap::new(),
                     }
@@ -104,10 +104,10 @@ impl Loader for MysqlLoader {
             let mut preferences = preferences.iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect::<Vec<_>>();
-            preferences.sort_by_key(|&(_, w)| -w as i32);
+            preferences.sort_by_key(|&(_, w)| w);
             student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
             student.bonuses = bonuses.iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
+                .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
         }
         super::remap(&mut students, &mut projects);

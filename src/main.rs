@@ -30,4 +30,7 @@ fn main() {
     for s in students {
         println!("{:#?}", s);
     }
+    for p in projects {
+        println!("Project {}: {}", p.id, p.name);
+    }
 }
