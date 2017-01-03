@@ -4,12 +4,10 @@ extern crate mysql;
 
 use ini::Ini;
 use loaders::*;
-use project::Project;
-use student::Student;
+use types::*;
 
 mod loaders;
-mod project;
-mod student;
+mod types;
 
 #[derive(Debug)]
 struct Assignments {
@@ -31,6 +29,6 @@ fn main() {
         println!("{:#?}", s);
     }
     for p in projects {
-        println!("Project {}: {}", p.id, p.name);
+        println!("Project {:?}: {}", p.id, p.name);
     }
 }

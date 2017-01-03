@@ -1,5 +1,4 @@
-use project::Project;
-use student::Student;
+use types::*;
 use std::collections::HashMap;
 
 pub use self::loader::Loader;
@@ -8,8 +7,8 @@ pub use self::mysql_loader::MysqlLoader;
 mod mysql_loader;
 mod loader;
 
-fn remap_projects(projects: &mut Vec<Project>) -> HashMap<usize, usize> {
-    let map: HashMap<usize, usize> = projects.iter().map(|p| p.id).zip(0..).collect();
+fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {
+    let map: HashMap<ProjectId, ProjectId> = projects.iter().zip(0..).map(|(p, n)| (p.id, ProjectId(n))).collect();
     for project in projects.iter_mut() {
         project.id = map[&project.id];
     }
@@ -18,7 +17,7 @@ fn remap_projects(projects: &mut Vec<Project>) -> HashMap<usize, usize> {
 
 fn remap_students(students: &mut Vec<Student>) {
     for (idx, student) in students.iter_mut().enumerate() {
-        student.id = idx;
+        student.id = StudentId(idx);
     }
 }
 

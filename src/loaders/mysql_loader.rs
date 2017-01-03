@@ -1,9 +1,8 @@
 use ini::Ini;
 use mysql as my;
-use project::Project;
 use std::collections::HashMap;
-use student::Student;
 use super::loader::Loader;
+use types::*;
 
 pub struct MysqlLoader;
 
@@ -37,7 +36,7 @@ fn load_projects(pool: &my::Pool) -> Result<Vec<Project>, String> {
                 .map(|row| {
                     let (id, name, min_students, max_students, max_occurrences) = my::from_row(row);
                     Project {
-                        id: id,
+                        id: ProjectId(id),
                         name: name,
                         min_students: min_students,
                         max_students: max_students,
@@ -56,7 +55,7 @@ fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
                 .map(|row| {
                     let (id, last_name, first_name): (usize, String, String) = my::from_row(row);
                     Student {
-                        id: id,
+                        id: StudentId(id),
                         name: format!("{} {}", first_name, last_name),
                         rankings: Vec::new(),
                         bonuses: HashMap::new(),
@@ -67,26 +66,26 @@ fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
         .map_err(|e| e.to_string())
 }
 
-fn load_bonuses(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
+fn load_bonuses(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>, String> {
     pool.prep_exec("SELECT eleve_id, projet_id, poids FROM pref_override", ())
         .map(|result| {
             result.map(|x| x.unwrap())
                 .map(|row| {
                     let (student_id, project_id, weight) = my::from_row(row);
-                    (student_id, project_id, weight)
+                    (StudentId(student_id), ProjectId(project_id), weight)
                 })
                 .collect()
         })
         .map_err(|e| e.to_string())
 }
 
-fn load_preferences(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
+fn load_preferences(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>, String> {
     pool.prep_exec("SELECT eleve_id, projet_id, poids FROM preferences", ())
         .map(|result| {
             result.map(|x| x.unwrap())
                 .map(|row| {
                     let (student_id, project_id, weight) = my::from_row(row);
-                    (student_id, project_id, weight)
+                    (StudentId(student_id), ProjectId(project_id), weight)
                 })
                 .collect()
         })
