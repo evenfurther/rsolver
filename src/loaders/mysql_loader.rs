@@ -50,6 +50,32 @@ impl MysqlLoader {
             })
             .map_err(|e| e.to_string())
     }
+
+    fn load_bonuses(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
+        pool.prep_exec("SELECT eleve_id, project_id, poids FROM prefs_override", ())
+            .map(|result| {
+                result.map(|x| x.unwrap())
+                    .map(|row| {
+                        let (student_id, project_id, weight) = my::from_row(row);
+                        (student_id, project_id, weight)
+                    })
+                    .collect()
+            })
+            .map_err(|e| e.to_string())
+    }
+
+    fn load_preferences(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
+        pool.prep_exec("SELECT eleve_id, project_id, poids FROM preferences", ())
+            .map(|result| {
+                result.map(|x| x.unwrap())
+                    .map(|row| {
+                        let (student_id, project_id, weight) = my::from_row(row);
+                        (student_id, project_id, weight)
+                    })
+                    .collect()
+            })
+            .map_err(|e| e.to_string())
+    }
 }
 
 impl Loader for MysqlLoader {
