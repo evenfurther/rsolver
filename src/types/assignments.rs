@@ -90,6 +90,10 @@ impl Assignments {
         self.assigned_to[student]
     }
 
+    pub fn project_at_rank(&self, student: StudentId, rank: usize) -> Option<ProjectId> {
+        self.rankings(student).get(rank).cloned()
+    }
+
     pub fn students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
         &self.assigned[project]
     }
@@ -105,8 +109,16 @@ impl Assignments {
             .collect()
     }
 
-    pub fn is_pinned(&self, student: StudentId, project: ProjectId) -> bool {
+    pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
         self.bonuses(student).get(&project).map_or(false, |b| *b >= PINNING_BONUS)
+    }
+
+    pub fn is_currently_pinned(&self, student: StudentId) -> bool {
+        if let Some(project) = self.project_for(student) {
+            self.is_pinned_for(student, project)
+        } else {
+            false
+        }
     }
 
     pub fn assign_to(&mut self, student: StudentId, project: ProjectId) {
@@ -135,8 +147,7 @@ impl Assignments {
     }
 
     pub fn clear(&mut self, project: ProjectId) {
-        let students = self.students_for(project).clone();
-        for student in students {
+        for student in self.students_for(project).clone() {
             self.unassign_from(student, project);
         }
     }
