@@ -26,6 +26,8 @@ fn main() {
         "mysql" => MysqlLoader {},
         other => panic!("unknown loader {}", other),
     };
-    let (mut students, mut projects) = loader.load(&conf).unwrap();
-    remap(&mut students, &mut projects);
+    let (students, projects) = loader.load(&conf).unwrap();
+    for s in students {
+        println!("{:#?}", s);
+    }
 }

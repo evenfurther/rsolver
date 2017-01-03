@@ -9,7 +9,7 @@ mod mysql_loader;
 mod loader;
 
 fn remap_projects(projects: &mut Vec<Project>) -> HashMap<usize, usize> {
-    let mut map: HashMap<usize, usize> = projects.iter().map(|p| p.id).zip(0..).collect();
+    let map: HashMap<usize, usize> = projects.iter().map(|p| p.id).zip(0..).collect();
     for project in projects.iter_mut() {
         project.id = map[&project.id];
     }
@@ -22,7 +22,7 @@ fn remap_students(students: &mut Vec<Student>) {
     }
 }
 
-pub fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
+fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
     remap_students(students);
     let map = remap_projects(projects);
     for student in students.iter_mut() {

@@ -68,7 +68,7 @@ fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
 }
 
 fn load_bonuses(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
-    pool.prep_exec("SELECT eleve_id, project_id, poids FROM prefs_override", ())
+    pool.prep_exec("SELECT eleve_id, projet_id, poids FROM pref_override", ())
         .map(|result| {
             result.map(|x| x.unwrap())
                 .map(|row| {
@@ -81,7 +81,7 @@ fn load_bonuses(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
 }
 
 fn load_preferences(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String> {
-    pool.prep_exec("SELECT eleve_id, project_id, poids FROM preferences", ())
+    pool.prep_exec("SELECT eleve_id, projet_id, poids FROM preferences", ())
         .map(|result| {
             result.map(|x| x.unwrap())
                 .map(|row| {
@@ -96,7 +96,7 @@ fn load_preferences(pool: &my::Pool) -> Result<Vec<(usize, usize, i32)>, String>
 impl Loader for MysqlLoader {
     fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>), String> {
         let pool = pool(config)?;
-        let projects = load_projects(&pool)?;
+        let mut projects = load_projects(&pool)?;
         let mut students = load_students(&pool)?;
         let preferences = load_preferences(&pool)?;
         let bonuses = load_bonuses(&pool)?;
@@ -104,12 +104,13 @@ impl Loader for MysqlLoader {
             let mut preferences = preferences.iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect::<Vec<_>>();
-            preferences.sort_by_key(|&(p, w)| -w as i32);
+            preferences.sort_by_key(|&(_, w)| -w as i32);
             student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
             student.bonuses = bonuses.iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect();
         }
-        Err("FIXME".to_string())
+        super::remap(&mut students, &mut projects);
+        Ok((students, projects))
     }
 }
