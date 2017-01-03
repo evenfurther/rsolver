@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate error_chain;
 extern crate ini;
 #[macro_use]
 extern crate mysql;
@@ -10,6 +12,7 @@ use stats::*;
 use types::*;
 
 mod algo;
+mod errors;
 mod loaders;
 mod stats;
 mod types;

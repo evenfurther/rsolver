@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 
 [dependencies]
+error-chain = "0.7.2"
 mysql = "8.0.0"
 rand = "0.3"
 rust-ini = "0.10"

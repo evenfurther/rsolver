@@ -1,3 +1,4 @@
+use errors::*;
 use ini::Ini;
 use mysql as my;
 use std::collections::HashMap;
@@ -6,11 +7,11 @@ use types::*;
 
 pub struct MysqlLoader;
 
-fn pool(config: &Ini) -> Result<my::Pool, String> {
+fn pool(config: &Ini) -> Result<my::Pool> {
     let (host, port, user, password, database) = match config.section(Some("mysql".to_string())) {
         Some(section) => {
             let port = section.get("port")
-                .map(|p| p.parse::<u16>().map_err(|e| e.to_string()));
+                .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
             (section.get("host").cloned(),
              port,
              section.get("user").cloned(),
@@ -25,10 +26,10 @@ fn pool(config: &Ini) -> Result<my::Pool, String> {
         .user(user)
         .pass(password)
         .db_name(database.or(Some("solver".to_string())));
-    my::Pool::new(opts).map_err(|e| e.to_string())
+    my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 
-fn load_projects(pool: &my::Pool) -> Result<Vec<Project>, String> {
+fn load_projects(pool: &my::Pool) -> Result<Vec<Project>> {
     pool.prep_exec("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
                    ())
         .map(|result| {
@@ -45,10 +46,10 @@ fn load_projects(pool: &my::Pool) -> Result<Vec<Project>, String> {
                 })
                 .collect()
         })
-        .map_err(|e| e.to_string())
+        .chain_err(|| "loading projects")
 }
 
-fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
+fn load_students(pool: &my::Pool) -> Result<Vec<Student>> {
     pool.prep_exec("SELECT id, nom, prenom FROM eleves", ())
         .map(|result| {
             result.map(|x| x.unwrap())
@@ -63,10 +64,10 @@ fn load_students(pool: &my::Pool) -> Result<Vec<Student>, String> {
                 })
                 .collect()
         })
-        .map_err(|e| e.to_string())
+        .chain_err(|| "loading students")
 }
 
-fn load_bonuses(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>, String> {
+fn load_bonuses(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>> {
     pool.prep_exec("SELECT eleve_id, projet_id, poids FROM pref_override", ())
         .map(|result| {
             result.map(|x| x.unwrap())
@@ -76,10 +77,10 @@ fn load_bonuses(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>, Str
                 })
                 .collect()
         })
-        .map_err(|e| e.to_string())
+        .chain_err(|| "loading bonuses")
 }
 
-fn load_preferences(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>, String> {
+fn load_preferences(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>> {
     pool.prep_exec("SELECT eleve_id, projet_id, poids FROM preferences", ())
         .map(|result| {
             result.map(|x| x.unwrap())
@@ -89,11 +90,11 @@ fn load_preferences(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>,
                 })
                 .collect()
         })
-        .map_err(|e| e.to_string())
+        .chain_err(|| "loading preferences")
 }
 
 impl Loader for MysqlLoader {
-    fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>), String> {
+    fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>)> {
         let pool = pool(config)?;
         let mut projects = load_projects(&pool)?;
         let mut students = load_students(&pool)?;
