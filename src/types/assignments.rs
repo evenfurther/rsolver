@@ -94,6 +94,10 @@ impl Assignments {
         self.rankings(student).get(rank).cloned()
     }
 
+    pub fn rank_of(&self, student: StudentId, project: ProjectId) -> Option<usize> {
+        self.student(student).rank_of(project)
+    }
+
     pub fn students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
         &self.assigned[project]
     }
@@ -152,6 +156,13 @@ impl Assignments {
         }
     }
 
+    pub fn clear_all_assignments(&mut self) {
+        let projects = self.projects.iter().map(|p| p.id).collect::<Vec<_>>();
+        for project in projects {
+            self.clear_assignments_for(project);
+        }
+    }
+
     pub fn unassigned_students(&self) -> Vec<StudentId> {
         self.assigned_to
             .iter()
@@ -206,7 +217,8 @@ impl Assignments {
     }
 
     pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
-        assert!(!self.is_cancelled(project), "a cancelled project cannot host anything");
+        assert!(!self.is_cancelled(project),
+                "a cancelled project cannot host anything");
         self.project(project).can_host()
     }
 }

@@ -6,11 +6,31 @@ extern crate rand;
 use algo::*;
 use ini::Ini;
 use loaders::*;
+use stats::*;
 use types::*;
 
 mod algo;
 mod loaders;
+mod stats;
 mod types;
+
+fn display_stats(a: &Assignments) {
+    let ranks = statistics(a);
+    let cumul = ranks.iter().scan(0, |s, &r| {
+        *s += r;
+        Some(*s)
+    });
+    let total: usize = ranks.iter().sum();
+    for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
+        if *n != 0 {
+            println!("  - rank {}: {} (cumulative {} - {:.2}%)",
+                     rank + 1,
+                     n,
+                     c,
+                     100.0 * c as f32 / total as f32);
+        }
+    }
+}
 
 fn main() {
     let conf = Ini::load_from_file("rsolver.ini").expect("cannot load configuration file");
@@ -22,4 +42,5 @@ fn main() {
     let (students, projects) = loader.load(&conf).unwrap();
     let mut assignments = Assignments::new(students, projects);
     assign(&mut assignments);
+    display_stats(&assignments);
 }
