@@ -10,6 +10,7 @@ pub struct Assignments {
     cancelled: Vec<bool>
 }
 
+#[allow(dead_code)]
 impl Assignments {
     pub fn new(students: Vec<Student>, projects: Vec<Project>) -> Assignments {
         let slen = students.len();
