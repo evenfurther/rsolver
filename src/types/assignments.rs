@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 use super::*;
 
+const PINNING_BONUS: i32 = 1000;
+
 #[derive(Debug)]
 pub struct Assignments {
     pub students: Vec<Student>,
     pub projects: Vec<Project>,
     assigned_to: Vec<Option<ProjectId>>,
     assigned: Vec<Vec<StudentId>>,
-    cancelled: Vec<bool>
+    cancelled: Vec<bool>,
+    pinned: Vec<Vec<StudentId>>,
 }
 
 #[allow(dead_code)]
@@ -15,12 +18,31 @@ impl Assignments {
     pub fn new(students: Vec<Student>, projects: Vec<Project>) -> Assignments {
         let slen = students.len();
         let plen = projects.len();
+        let pinned = (0..plen)
+            .map(|project_id| {
+                let project = ProjectId(project_id);
+                (0..slen)
+                    .filter_map(|student_id| if let Some(bonus) = students[student_id]
+                        .bonuses
+                        .get(&project) {
+                        if *bonus >= PINNING_BONUS {
+                            Some(StudentId(student_id))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    })
+                    .collect()
+            })
+            .collect();
         Assignments {
             students: students,
             projects: projects,
             assigned_to: vec![None; slen],
             assigned: vec![Vec::new(); plen],
             cancelled: vec![false; plen],
+            pinned: pinned,
         }
     }
 
@@ -52,10 +74,22 @@ impl Assignments {
         &self.assigned[project]
     }
 
+    pub fn pinned_students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
+        &self.pinned[project]
+    }
+
+    pub fn pinned_projects_for(&self, student: StudentId) -> Vec<ProjectId> {
+        self.bonuses(student)
+            .iter()
+            .filter_map(|(p, b)| if *b >= PINNING_BONUS { Some(*p) } else { None })
+            .collect()
+    }
+
     pub fn assign_to(&mut self, student: StudentId, project: ProjectId) {
         assert!(self.project_for(student).is_none(),
                 "a project is already assigned to this student");
-        assert!(!self.is_cancelled(project), "cannot assign to a cancelled project");
+        assert!(!self.is_cancelled(project),
+                "cannot assign to a cancelled project");
         self.assigned_to[student.0] = Some(project);
         self.assigned[project.0].push(student);
     }
@@ -97,7 +131,8 @@ impl Assignments {
 
     pub fn cancel(&mut self, ProjectId(project): ProjectId) {
         assert!(!self.cancelled[project], "project is cancelled already");
-        assert!(self.assigned[project].is_empty(), "cancelled project is assigned to some students");
+        assert!(self.assigned[project].is_empty(),
+                "cancelled project is assigned to some students");
         self.cancelled[project] = true;
     }
 
@@ -121,5 +156,4 @@ impl Assignments {
     pub fn is_under_capacity(&self, project: ProjectId) -> bool {
         self.is_open(project) && self.size(project) < self.project(project).min_students
     }
-
 }
