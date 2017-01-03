@@ -29,11 +29,33 @@ impl MysqlLoader {
             .db_name(database.or(Some("solver".to_string())));
         my::Pool::new(opts).map_err(|e| e.to_string())
     }
+
+    fn load_projects(pool: &my::Pool) -> Result<Vec<Project>, String> {
+        pool.prep_exec("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+                       ())
+            .map(|result| {
+                result.map(|x| x.unwrap())
+                    .map(|row| {
+                        let (id, name, min_students, max_students, max_occurrences) =
+                            my::from_row(row);
+                        Project {
+                            id: id,
+                            name: name,
+                            min_students: min_students,
+                            max_students: max_students,
+                            max_occurrences: max_occurrences,
+                        }
+                    })
+                    .collect()
+            })
+            .map_err(|e| e.to_string())
+    }
 }
 
 impl Loader for MysqlLoader {
     fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>), String> {
         let pool = Self::pool(config)?;
+        let projects = Self::load_projects(&pool)?;
         Err("FIXME".to_string())
     }
 }

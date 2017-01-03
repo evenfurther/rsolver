@@ -1,8 +1,8 @@
 #[derive(Debug)]
 pub struct Project {
-    id: usize,
-    name: String,
-    min_students: usize,
-    max_students: usize,
-    max_occurrences: usize,
+    pub id: usize,
+    pub name: String,
+    pub min_students: usize,
+    pub max_students: usize,
+    pub max_occurrences: usize,
 }

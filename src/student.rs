@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Student {
-    id: usize,
-    name: String,
-    rankings: Vec<usize>,
-    bonuses: Vec<(usize, i32)>,
+    pub id: usize,
+    pub name: String,
+    pub rankings: Vec<usize>,
+    pub bonuses: Vec<(usize, i32)>,
 }
