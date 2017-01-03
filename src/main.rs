@@ -3,8 +3,7 @@ extern crate ini;
 extern crate mysql;
 
 use ini::Ini;
-use loaders::MysqlLoader;
-use loaders::Loader;
+use loaders::*;
 use project::Project;
 use student::Student;
 
@@ -27,5 +26,6 @@ fn main() {
         "mysql" => MysqlLoader {},
         other => panic!("unknown loader {}", other),
     };
-    let (students, projects) = loader.load(&conf).unwrap();
+    let (mut students, mut projects) = loader.load(&conf).unwrap();
+    remap(&mut students, &mut projects);
 }
