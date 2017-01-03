@@ -138,7 +138,7 @@ impl Assignments {
             .iter()
             .position(|&s| s == student)
             .expect("student not found in project");
-        self.assigned.remove(pos);
+        self.assigned[project.0].remove(pos);
     }
 
     pub fn unassign(&mut self, student: StudentId) {
