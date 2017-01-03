@@ -183,6 +183,11 @@ impl Assignments {
         self.students_for(project).len()
     }
 
+    pub fn is_at_capacity(&self, project: ProjectId) -> bool {
+        let p = self.project(project);
+        self.size(project) == p.max_students * p.max_occurrences
+    }
+
     pub fn is_over_capacity(&self, project: ProjectId) -> bool {
         let p = self.project(project);
         self.size(project) > p.max_students * p.max_occurrences
