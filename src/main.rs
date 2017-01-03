@@ -9,14 +9,6 @@ use types::*;
 mod loaders;
 mod types;
 
-#[derive(Debug)]
-struct Assignments {
-    students: Vec<Student>,
-    projects: Vec<Project>,
-    assigned_to: Vec<Option<usize>>,
-    assigned: Vec<Vec<usize>>,
-}
-
 fn main() {
     let conf = Ini::load_from_file("rsolver.ini").expect("cannot load configuration file");
     let solver = conf.section(Some("solver".to_string())).expect("cannot find solver section");
