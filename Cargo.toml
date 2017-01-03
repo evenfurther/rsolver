@@ -1,0 +1,8 @@
+[package]
+name = "rsolver"
+version = "0.1.0"
+authors = ["Samuel Tardieu <sam@rfc1149.net>"]
+
+[dependencies]
+mysql = "8.0.0"
+rust-ini = "0.9"
