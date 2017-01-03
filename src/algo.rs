@@ -40,6 +40,23 @@ fn solve_overflow_to_rank(a: &mut Assignments, rank: usize, rng: &mut Box<Rng>) 
     true
 }
 
+fn complete_incomplete_projects(a: &mut Assignments, rng: &mut Box<Rng>) {
+    let mut projects = a.filter_projects(|p| a.is_under_capacity(p));
+    projects.sort_by_key(|&p| (a.missing(p), -(a.size(p) as i32)));
+    let mut students = a.unassigned_students();
+    rng.shuffle(&mut students);
+    let mut students = students.into_iter();
+    for project in projects {
+        while a.is_under_capacity(project) {
+            if let Some(student) = students.next() {
+                a.assign_to(student, project);
+            } else {
+                return;
+            }
+        }
+    }
+}
+
 pub fn assign(a: &mut Assignments) {
     let mut rng: Box<Rng> = Box::new(thread_rng());
     first_non_cancelled_choice(a);
@@ -49,4 +66,5 @@ pub fn assign(a: &mut Assignments) {
             break;
         }
     }
+    complete_incomplete_projects(a, &mut rng);
 }

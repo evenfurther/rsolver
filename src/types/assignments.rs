@@ -183,6 +183,10 @@ impl Assignments {
         self.students_for(project).len()
     }
 
+    pub fn min_students(&self, project: ProjectId) -> usize {
+        self.project(project).min_students
+    }
+
     pub fn is_at_capacity(&self, project: ProjectId) -> bool {
         let p = self.project(project);
         self.size(project) == p.max_students * p.max_occurrences
@@ -195,5 +199,9 @@ impl Assignments {
 
     pub fn is_under_capacity(&self, project: ProjectId) -> bool {
         self.is_open(project) && self.size(project) < self.project(project).min_students
+    }
+
+    pub fn missing(&self, project: ProjectId) -> usize {
+        self.min_students(project) - self.size(project)
     }
 }
