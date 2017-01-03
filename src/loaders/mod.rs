@@ -16,7 +16,14 @@ fn remap_projects(projects: &mut Vec<Project>) -> HashMap<usize, usize> {
     map
 }
 
+fn remap_students(students: &mut Vec<Student>) {
+    for (idx, student) in students.iter_mut().enumerate() {
+        student.id = idx;
+    }
+}
+
 pub fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
+    remap_students(students);
     let map = remap_projects(projects);
     for student in students.iter_mut() {
         for id in student.rankings.iter_mut() {
