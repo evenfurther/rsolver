@@ -45,7 +45,7 @@ fn load() -> Result<Assignments> {
     let solver = conf.section(Some("solver".to_string())).expect("cannot find solver section");
     let loader = match solver.get("loader").unwrap_or(&"mysql".to_string()).as_str() {
         "mysql" => MysqlLoader {},
-        other => panic!("unknown loader {}", other),
+        other => bail!("unknown loader: {}", other),
     };
     let (students, projects) = loader.load(&conf)?;
     Ok(Assignments::new(students, projects))
