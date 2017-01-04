@@ -19,7 +19,7 @@ mod stats;
 mod types;
 
 mod errors {
-    error_chain! {}
+    error_chain!{}
 }
 
 fn display_stats(a: &Assignments) {
@@ -56,7 +56,7 @@ fn main() {
         Ok(mut assignments) => {
             assign(&mut assignments);
             display_stats(&assignments);
-        },
+        }
         Err(e) => {
             let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
             std::process::exit(1);

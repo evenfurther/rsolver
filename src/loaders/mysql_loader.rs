@@ -29,77 +29,48 @@ fn pool(config: &Ini) -> Result<my::Pool> {
     my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 
-fn load_projects(pool: &my::Pool) -> Result<Vec<Project>> {
-    pool.prep_exec("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
-                   ())
-        .map(|result| {
-            result.map(|x| x.unwrap())
-                .map(|row| {
-                    let (id, name, min_students, max_students, max_occurrences) = my::from_row(row);
-                    Project {
-                        id: ProjectId(id),
-                        name: name,
-                        min_students: min_students,
-                        max_students: max_students,
-                        max_occurrences: max_occurrences,
-                    }
+macro_rules! load {
+    ($name:ident, $query:expr, $ty:ty, $pattern:pat, $value:expr) => {
+        fn $name(pool: &my::Pool) -> my::Result<Vec<$ty>> {
+            pool.prep_exec($query, ())
+                .and_then(|result| {
+                    result.map(|row| {
+                        row.map(|row| {
+                            let $pattern =
+                                my::from_row(row);
+                            $value
+                        })
+                    })
+                    .collect()
                 })
-                .collect()
-        })
-        .chain_err(|| "loading projects")
+        }
+    }
 }
 
-fn load_students(pool: &my::Pool) -> Result<Vec<Student>> {
-    pool.prep_exec("SELECT id, nom, prenom FROM eleves", ())
-        .map(|result| {
-            result.map(|x| x.unwrap())
-                .map(|row| {
-                    let (id, last_name, first_name): (usize, String, String) = my::from_row(row);
-                    Student {
-                        id: StudentId(id),
-                        name: format!("{} {}", first_name, last_name),
-                        rankings: Vec::new(),
-                        bonuses: HashMap::new(),
-                    }
-                })
-                .collect()
-        })
-        .chain_err(|| "loading students")
-}
+load!(load_projects, "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+      Project, (id, name, min_students, max_students, max_occurrences),
+      Project { id: ProjectId(id), name: name, min_students: min_students,
+      max_students: max_students, max_occurrences: max_occurrences });
 
-fn load_bonuses(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>> {
-    pool.prep_exec("SELECT eleve_id, projet_id, poids FROM pref_override", ())
-        .map(|result| {
-            result.map(|x| x.unwrap())
-                .map(|row| {
-                    let (student_id, project_id, weight) = my::from_row(row);
-                    (StudentId(student_id), ProjectId(project_id), weight)
-                })
-                .collect()
-        })
-        .chain_err(|| "loading bonuses")
-}
+load!(load_students, "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
+      Student, (id, name), Student { id: StudentId(id), name: name,
+      rankings: Vec::new(), bonuses: HashMap::new() });
 
-fn load_preferences(pool: &my::Pool) -> Result<Vec<(StudentId, ProjectId, i32)>> {
-    pool.prep_exec("SELECT eleve_id, projet_id, poids FROM preferences", ())
-        .map(|result| {
-            result.map(|x| x.unwrap())
-                .map(|row| {
-                    let (student_id, project_id, weight) = my::from_row(row);
-                    (StudentId(student_id), ProjectId(project_id), weight)
-                })
-                .collect()
-        })
-        .chain_err(|| "loading preferences")
-}
+load!(load_bonuses, "SELECT eleve_id, projet_id, poids FROM pref_override",
+      (StudentId, ProjectId, i32), (student_id, project_id, weight),
+      (StudentId(student_id), ProjectId(project_id), weight));
+
+load!(load_preferences, "SELECT eleve_id, projet_id, poids FROM preferences",
+      (StudentId, ProjectId, i32), (student_id, project_id, weight),
+      (StudentId(student_id), ProjectId(project_id), weight));
 
 impl Loader for MysqlLoader {
     fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>)> {
         let pool = pool(config)?;
-        let mut projects = load_projects(&pool)?;
-        let mut students = load_students(&pool)?;
-        let preferences = load_preferences(&pool)?;
-        let bonuses = load_bonuses(&pool)?;
+        let mut projects = load_projects(&pool).chain_err(|| "cannot load projects")?;
+        let mut students = load_students(&pool).chain_err(|| "cannot load students")?;
+        let preferences = load_preferences(&pool).chain_err(|| "cannot load rankings")?;
+        let bonuses = load_bonuses(&pool).chain_err(|| "cannot load bonuses")?;
         for student in students.iter_mut() {
             let mut preferences = preferences.iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
