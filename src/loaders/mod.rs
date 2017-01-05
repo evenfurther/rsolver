@@ -25,8 +25,8 @@ fn remap_students(students: &mut Vec<Student>) {
 fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
     remap_students(students);
     let map = remap_projects(projects);
-    for student in students.iter_mut() {
-        for id in student.rankings.iter_mut() {
+    for student in students {
+        for id in &mut student.rankings {
             *id = map[&*id];
         }
         student.bonuses = student.bonuses.iter().map(|(&k, &v)| (map[&k], v)).collect();

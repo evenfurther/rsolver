@@ -25,7 +25,7 @@ fn pool(config: &Ini) -> Result<my::Pool> {
         .tcp_port(port.unwrap_or(Ok(3306))?)
         .user(user)
         .pass(password)
-        .db_name(database.or(Some("solver".to_string())));
+        .db_name(database.or_else(|| Some("solver".to_string())));
     my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 
@@ -71,7 +71,7 @@ impl Loader for MysqlLoader {
         let mut students = load_students(&pool).chain_err(|| "cannot load students")?;
         let preferences = load_preferences(&pool).chain_err(|| "cannot load rankings")?;
         let bonuses = load_bonuses(&pool).chain_err(|| "cannot load bonuses")?;
-        for student in students.iter_mut() {
+        for student in &mut students {
             let mut preferences = preferences.iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect::<Vec<_>>();
