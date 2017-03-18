@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate error_chain;
 extern crate ini;
-#[macro_use]
 extern crate mysql;
 extern crate rand;
 

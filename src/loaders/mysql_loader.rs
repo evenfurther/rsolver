@@ -10,8 +10,8 @@ pub struct MysqlLoader;
 fn pool(config: &Ini) -> Result<my::Pool> {
     let (host, port, user, password, database) = match config.section(Some("mysql".to_string())) {
         Some(section) => {
-            let port = section.get("port")
-                .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
+            let port =
+                section.get("port").map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
             (section.get("host").cloned(),
              port,
              section.get("user").cloned(),
@@ -47,21 +47,39 @@ macro_rules! load {
     }
 }
 
-load!(load_projects, "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
-      Project, (id, name, min_students, max_students, max_occurrences),
-      Project { id: ProjectId(id), name: name, min_students: min_students,
-      max_students: max_students, max_occurrences: max_occurrences });
+load!(load_projects,
+      "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+      Project,
+      (id, name, min_students, max_students, max_occurrences),
+      Project {
+          id: ProjectId(id),
+          name: name,
+          min_students: min_students,
+          max_students: max_students,
+          max_occurrences: max_occurrences,
+      });
 
-load!(load_students, "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
-      Student, (id, name), Student { id: StudentId(id), name: name,
-      rankings: Vec::new(), bonuses: HashMap::new() });
+load!(load_students,
+      "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
+      Student,
+      (id, name),
+      Student {
+          id: StudentId(id),
+          name: name,
+          rankings: Vec::new(),
+          bonuses: HashMap::new(),
+      });
 
-load!(load_bonuses, "SELECT eleve_id, projet_id, poids FROM pref_override",
-      (StudentId, ProjectId, i32), (student_id, project_id, weight),
+load!(load_bonuses,
+      "SELECT eleve_id, projet_id, poids FROM pref_override",
+      (StudentId, ProjectId, i32),
+      (student_id, project_id, weight),
       (StudentId(student_id), ProjectId(project_id), weight));
 
-load!(load_preferences, "SELECT eleve_id, projet_id, poids FROM preferences",
-      (StudentId, ProjectId, i32), (student_id, project_id, weight),
+load!(load_preferences,
+      "SELECT eleve_id, projet_id, poids FROM preferences",
+      (StudentId, ProjectId, i32),
+      (student_id, project_id, weight),
       (StudentId(student_id), ProjectId(project_id), weight));
 
 impl Loader for MysqlLoader {

@@ -24,16 +24,16 @@ impl Assignments {
                 let project = ProjectId(project_id);
                 (0..slen)
                     .filter_map(|student_id| if let Some(bonus) = students[student_id]
-                        .bonuses
-                        .get(&project) {
-                        if *bonus >= PINNING_BONUS {
-                            Some(StudentId(student_id))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    })
+                                       .bonuses
+                                       .get(&project) {
+                                    if *bonus >= PINNING_BONUS {
+                                        Some(StudentId(student_id))
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                })
                     .collect()
             })
             .collect();
@@ -157,7 +157,10 @@ impl Assignments {
     }
 
     pub fn clear_all_assignments(&mut self) {
-        let projects = self.projects.iter().map(|p| p.id).collect::<Vec<_>>();
+        let projects = self.projects
+            .iter()
+            .map(|p| p.id)
+            .collect::<Vec<_>>();
         for project in projects {
             self.clear_assignments_for(project);
         }
@@ -168,10 +171,10 @@ impl Assignments {
             .iter()
             .enumerate()
             .filter_map(|(id, assignment)| if assignment.is_none() {
-                Some(StudentId(id))
-            } else {
-                None
-            })
+                            Some(StudentId(id))
+                        } else {
+                            None
+                        })
             .collect()
     }
 
