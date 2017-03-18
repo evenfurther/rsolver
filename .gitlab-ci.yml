@@ -1,0 +1,28 @@
+image: debian:jessie
+
+before_script:
+  - apt-get -y update
+  - apt-get -y install curl gcc
+  - export PATH=$PATH:/root/.cargo/bin
+
+.test_template: &cargo_test
+  stage: test
+  script:
+    - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST
+    - cargo +$RUST test
+
+stable:
+  <<: *cargo_test
+  variables:
+    RUST: stable
+
+beta:
+  <<: *cargo_test
+  variables:
+    RUST: beta
+
+nightly:
+  <<: *cargo_test
+  variables:
+    RUST: nightly
+  allow_failure: true
