@@ -1,14 +1,14 @@
-image: debian:jessie
+image: rfc1149/rose-dev
 
-before_script:
-  - apt-get -y update
-  - apt-get -y install curl gcc
-  - export PATH=$PATH:/root/.cargo/bin
+cache:
+  key: "$CI_BUILD_NAME"
+  paths:
+    - /root/.cargo
 
 .test_template: &cargo_test
   stage: test
   script:
-    - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST
+    - rustup install $RUST
     - cargo +$RUST test
 
 stable:
