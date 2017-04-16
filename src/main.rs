@@ -23,10 +23,12 @@ mod errors {
 
 fn display_stats(a: &Assignments) {
     let ranks = statistics(a);
-    let cumul = ranks.iter().scan(0, |s, &r| {
-        *s += r;
-        Some(*s)
-    });
+    let cumul = ranks
+        .iter()
+        .scan(0, |s, &r| {
+            *s += r;
+            Some(*s)
+        });
     let total: usize = ranks.iter().sum();
     for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
         if *n != 0 {
@@ -41,8 +43,12 @@ fn display_stats(a: &Assignments) {
 
 fn load() -> Result<Assignments> {
     let conf = Ini::load_from_file("rsolver.ini").expect("cannot load configuration file");
-    let solver = conf.section(Some("solver".to_string())).expect("cannot find solver section");
-    let loader = match solver.get("loader").unwrap_or(&"mysql".to_string()).as_str() {
+    let solver = conf.section(Some("solver".to_string()))
+        .expect("cannot find solver section");
+    let loader = match solver
+              .get("loader")
+              .unwrap_or(&"mysql".to_string())
+              .as_str() {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
     };

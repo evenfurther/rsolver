@@ -8,7 +8,8 @@ mod mysql_loader;
 mod loader;
 
 fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {
-    let map: HashMap<ProjectId, ProjectId> = projects.iter()
+    let map: HashMap<ProjectId, ProjectId> = projects
+        .iter()
         .zip(0..)
         .map(|(p, n)| (p.id, ProjectId(n)))
         .collect();
@@ -31,7 +32,8 @@ fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
         for id in &mut student.rankings {
             *id = map[&*id];
         }
-        student.bonuses = student.bonuses
+        student.bonuses = student
+            .bonuses
             .iter()
             .map(|(&k, &v)| (map[&k], v))
             .collect();

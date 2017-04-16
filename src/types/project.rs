@@ -42,6 +42,9 @@ fn test_can_host() {
         ..p
     };
     assert_eq!(p.can_host(), vec![5, 6, 10, 11, 12]);
-    let p = Project { max_occurrences: 3, ..p };
+    let p = Project {
+        max_occurrences: 3,
+        ..p
+    };
     assert_eq!(p.can_host(), vec![5, 6, 10, 11, 12, 15, 16, 17, 18]);
 }

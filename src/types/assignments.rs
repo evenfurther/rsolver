@@ -64,13 +64,13 @@ impl Assignments {
     {
         (0..self.projects.len())
             .filter_map(|project| {
-                let project = ProjectId(project);
-                if condition(project) {
-                    Some(project)
-                } else {
-                    None
-                }
-            })
+                            let project = ProjectId(project);
+                            if condition(project) {
+                                Some(project)
+                            } else {
+                                None
+                            }
+                        })
             .collect()
     }
 
@@ -114,7 +114,9 @@ impl Assignments {
     }
 
     pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
-        self.bonuses(student).get(&project).map_or(false, |b| *b >= PINNING_BONUS)
+        self.bonuses(student)
+            .get(&project)
+            .map_or(false, |b| *b >= PINNING_BONUS)
     }
 
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
@@ -135,8 +137,9 @@ impl Assignments {
     }
 
     pub fn unassign_from(&mut self, student: StudentId, project: ProjectId) {
-        assert!(self.project_for(student) == Some(project),
-                "project not assigned to this student");
+        assert_eq!(self.project_for(student),
+                   Some(project),
+                   "project not assigned to this student");
         self.assigned_to[student.0] = None;
         let pos = self.assigned[project.0]
             .iter()
@@ -146,7 +149,8 @@ impl Assignments {
     }
 
     pub fn unassign(&mut self, student: StudentId) {
-        let project = self.project_for(student).expect("student is not assigned to any project");
+        let project = self.project_for(student)
+            .expect("student is not assigned to any project");
         self.unassign_from(student, project);
     }
 
@@ -157,10 +161,7 @@ impl Assignments {
     }
 
     pub fn clear_all_assignments(&mut self) {
-        let projects = self.projects
-            .iter()
-            .map(|p| p.id)
-            .collect::<Vec<_>>();
+        let projects = self.projects.iter().map(|p| p.id).collect::<Vec<_>>();
         for project in projects {
             self.clear_assignments_for(project);
         }

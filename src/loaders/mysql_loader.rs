@@ -10,8 +10,9 @@ pub struct MysqlLoader;
 fn pool(config: &Ini) -> Result<my::Pool> {
     let (host, port, user, password, database) = match config.section(Some("mysql".to_string())) {
         Some(section) => {
-            let port =
-                section.get("port").map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
+            let port = section
+                .get("port")
+                .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
             (section.get("host").cloned(),
              port,
              section.get("user").cloned(),
@@ -85,17 +86,22 @@ load!(load_preferences,
 impl Loader for MysqlLoader {
     fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>)> {
         let pool = pool(config)?;
-        let mut projects = load_projects(&pool).chain_err(|| "cannot load projects")?;
-        let mut students = load_students(&pool).chain_err(|| "cannot load students")?;
-        let preferences = load_preferences(&pool).chain_err(|| "cannot load rankings")?;
+        let mut projects = load_projects(&pool)
+            .chain_err(|| "cannot load projects")?;
+        let mut students = load_students(&pool)
+            .chain_err(|| "cannot load students")?;
+        let preferences = load_preferences(&pool)
+            .chain_err(|| "cannot load rankings")?;
         let bonuses = load_bonuses(&pool).chain_err(|| "cannot load bonuses")?;
         for student in &mut students {
-            let mut preferences = preferences.iter()
+            let mut preferences = preferences
+                .iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect::<Vec<_>>();
             preferences.sort_by_key(|&(_, w)| w);
             student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
-            student.bonuses = bonuses.iter()
+            student.bonuses = bonuses
+                .iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
         }
