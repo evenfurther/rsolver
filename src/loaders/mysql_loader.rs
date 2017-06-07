@@ -86,10 +86,8 @@ load!(load_preferences,
 impl Loader for MysqlLoader {
     fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>)> {
         let pool = pool(config)?;
-        let mut projects = load_projects(&pool)
-            .chain_err(|| "cannot load projects")?;
-        let mut students = load_students(&pool)
-            .chain_err(|| "cannot load students")?;
+        let mut projects = load_projects(&pool).chain_err(|| "cannot load projects")?;
+        let mut students = load_students(&pool).chain_err(|| "cannot load students")?;
         let preferences = load_preferences(&pool)
             .chain_err(|| "cannot load rankings")?;
         let bonuses = load_bonuses(&pool).chain_err(|| "cannot load bonuses")?;
