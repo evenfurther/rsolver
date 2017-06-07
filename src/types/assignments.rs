@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use super::*;
 
-#[allow(dead_code)]
 const PINNING_BONUS: isize = 1000;
 
 #[derive(Debug)]

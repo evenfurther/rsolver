@@ -22,7 +22,7 @@ mod errors {
     error_chain!{}
 }
 
-fn display_stats(a: &Assignments) {
+fn display_stats(a: &Assignments) -> Result<()> {
     let ranks = statistics(a);
     let cumul = ranks
         .iter()
@@ -40,6 +40,7 @@ fn display_stats(a: &Assignments) {
                      100.0 * c as f32 / total as f32);
         }
     }
+    Ok(())
 }
 
 fn load(conf: &Ini, solver: &HashMap<String, String>) -> Result<Assignments> {
@@ -74,7 +75,6 @@ fn run() -> Result<()> {
         "ordering" => Ordering {},
         other => bail!("unknown algorithm: {}", other),
     };
-    algo.assign(&conf, &mut assignments);
-    display_stats(&assignments);
-    Ok(())
+    algo.assign(&conf, &mut assignments)?;
+    display_stats(&assignments)
 }
