@@ -137,6 +137,6 @@ impl<'a> Algo for Ordering<'a> {
     }
 
     fn get_assignments(&self) -> &Assignments {
-        &self.assignments
+        self.assignments
     }
 }
