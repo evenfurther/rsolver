@@ -6,12 +6,12 @@ use types::*;
 
 pub struct Ordering<'a> {
     config: &'a Config,
-    assignments: Assignments,
+    assignments: &'a mut Assignments,
     rng: Box<Rng>,
 }
 
 impl<'a> Ordering<'a> {
-    pub fn new(config: &'a Config, assignments: Assignments) -> Ordering<'a> {
+    pub fn new(config: &'a Config, assignments: &'a mut Assignments) -> Ordering<'a> {
         Ordering {
             config: config,
             assignments: assignments,

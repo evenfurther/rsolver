@@ -98,14 +98,16 @@ fn run(config: &Config) -> Result<()> {
         .conf
         .section(Some("solver".to_string()))
         .ok_or("cannot find solver section")?;
-    let assignments = load(config, solver)?;
-    let mut algo = match solver
-              .get("algorithm")
-              .unwrap_or(&"ordering".to_string())
-              .as_str() {
-        "ordering" => Ordering::new(config, assignments),
-        other => bail!("unknown algorithm: {}", other),
-    };
-    algo.assign()?;
-    display_stats(algo.get_assignments())
+    let mut assignments = load(config, solver)?;
+    {
+        let mut algo = match solver
+                  .get("algorithm")
+                  .unwrap_or(&"ordering".to_string())
+                  .as_str() {
+            "ordering" => Ordering::new(config, &mut assignments),
+            other => bail!("unknown algorithm: {}", other),
+        };
+        algo.assign()?;
+    }
+    display_stats(&assignments)
 }
