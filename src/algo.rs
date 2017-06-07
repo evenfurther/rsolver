@@ -66,7 +66,7 @@ fn complete_projects_under_capacity(a: &mut Assignments, rng: &mut Box<Rng>) {
     }
 }
 
-fn cancel_project_under_capacity(a: &mut Assignments) -> bool {
+fn cancel_occurrence_under_capacity(a: &mut Assignments) -> bool {
     let mut projects = a.filter_projects(|p| a.is_under_capacity(p));
     if projects.is_empty() {
         return false;
@@ -76,7 +76,7 @@ fn cancel_project_under_capacity(a: &mut Assignments) -> bool {
     println!("Cancelling under capacity project: {}",
              a.project(project).name);
     a.clear_all_assignments();
-    a.cancel(project);
+    a.cancel_occurrence(project);
     true
 }
 
@@ -93,7 +93,7 @@ pub fn assign(a: &mut Assignments) {
 
     // If there are incomplete projects, cancel the incomplete projects with the
     // most missing members and restart.
-    if cancel_project_under_capacity(a) {
+    if cancel_occurrence_under_capacity(a) {
         assign(a);
     }
 }

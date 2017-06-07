@@ -8,9 +8,9 @@ const PINNING_BONUS: i32 = 1000;
 pub struct Assignments {
     pub students: Vec<Student>,
     pub projects: Vec<Project>,
+    max_occurrences: Vec<usize>,
     assigned_to: Vec<Option<ProjectId>>,
     assigned: Vec<Vec<StudentId>>,
-    cancelled: Vec<bool>,
     pinned: Vec<Vec<StudentId>>,
 }
 
@@ -37,12 +37,13 @@ impl Assignments {
                     .collect()
             })
             .collect();
+        let max_occurrences = projects.iter().map(|p| p.max_occurrences).collect();
         Assignments {
             students: students,
             projects: projects,
+            max_occurrences: max_occurrences,
             assigned_to: vec![None; slen],
             assigned: vec![Vec::new(); plen],
-            cancelled: vec![false; plen],
             pinned: pinned,
         }
     }
@@ -179,15 +180,23 @@ impl Assignments {
             .collect()
     }
 
-    pub fn cancel(&mut self, ProjectId(project): ProjectId) {
-        assert!(!self.cancelled[project], "project is cancelled already");
-        assert!(self.assigned[project].is_empty(),
+    pub fn cancel(&mut self, project: ProjectId) {
+        assert!(!self.is_cancelled(project), "project is cancelled already");
+        assert!(self.assigned[project.0].is_empty(),
                 "cancelled project is assigned to some students");
-        self.cancelled[project] = true;
+        self.max_occurrences[project.0] = 0;
+    }
+
+    pub fn cancel_occurrence(&mut self, project: ProjectId) {
+        assert!(!self.is_cancelled(project), "project is cancelled already");
+        self.max_occurrences[project.0] -= 1;
+        assert!(self.students_for(project).len() <=
+                self.max_occurrences[project.0] * self.project(project).max_students,
+                "cancelled occurrence still has to too many students assigned");
     }
 
     pub fn is_cancelled(&self, ProjectId(project): ProjectId) -> bool {
-        self.cancelled[project]
+        self.max_occurrences[project] == 0
     }
 
     pub fn is_open(&self, project: ProjectId) -> bool {
@@ -204,12 +213,12 @@ impl Assignments {
 
     pub fn is_at_capacity(&self, project: ProjectId) -> bool {
         let p = self.project(project);
-        self.size(project) == p.max_students * p.max_occurrences
+        self.size(project) == p.max_students * self.max_occurrences[project.0]
     }
 
     pub fn is_over_capacity(&self, project: ProjectId) -> bool {
         let p = self.project(project);
-        self.size(project) > p.max_students * p.max_occurrences
+        self.size(project) > p.max_students * self.max_occurrences[project.0]
     }
 
     pub fn is_under_capacity(&self, project: ProjectId) -> bool {
@@ -223,6 +232,7 @@ impl Assignments {
     pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
         assert!(!self.is_cancelled(project),
                 "a cancelled project cannot host anything");
-        self.project(project).can_host()
+        self.project(project)
+            .can_host(self.max_occurrences[project.0])
     }
 }
