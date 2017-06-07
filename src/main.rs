@@ -49,7 +49,7 @@ fn display_stats(a: &Assignments) -> Result<()> {
 fn load(config: &Config, solver: &HashMap<String, String>) -> Result<Assignments> {
     let loader = match solver
               .get("loader")
-              .unwrap_or(&"mysql".to_string())
+              .unwrap_or(&"mysql".to_owned())
               .as_str() {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
@@ -96,13 +96,13 @@ fn main() {
 fn run(config: &Config) -> Result<()> {
     let solver = config
         .conf
-        .section(Some("solver".to_string()))
+        .section(Some("solver".to_owned()))
         .ok_or("cannot find solver section")?;
     let mut assignments = load(config, solver)?;
     {
         let mut algo = match solver
                   .get("algorithm")
-                  .unwrap_or(&"ordering".to_string())
+                  .unwrap_or(&"ordering".to_owned())
                   .as_str() {
             "ordering" => Ordering::new(config, &mut assignments),
             other => bail!("unknown algorithm: {}", other),

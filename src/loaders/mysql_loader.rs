@@ -9,7 +9,7 @@ pub struct MysqlLoader;
 
 fn pool(config: &Config) -> Result<my::Pool> {
     let (host, port, user, password, database) =
-        match config.conf.section(Some("mysql".to_string())) {
+        match config.conf.section(Some("mysql".to_owned())) {
             Some(section) => {
                 let port = section
                     .get("port")
@@ -27,7 +27,7 @@ fn pool(config: &Config) -> Result<my::Pool> {
         .tcp_port(port.unwrap_or(Ok(3306))?)
         .user(user)
         .pass(password)
-        .db_name(database.or_else(|| Some("solver".to_string())));
+        .db_name(database.or_else(|| Some("solver".to_owned())));
     my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 
