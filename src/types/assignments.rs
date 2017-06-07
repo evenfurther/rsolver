@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use super::*;
 
 #[allow(dead_code)]
-const PINNING_BONUS: i32 = 1000;
+const PINNING_BONUS: isize = 1000;
 
 #[derive(Debug)]
 pub struct Assignments {
@@ -79,11 +79,11 @@ impl Assignments {
         &self.student(student).rankings
     }
 
-    pub fn bonuses(&self, student: StudentId) -> &HashMap<ProjectId, i32> {
+    pub fn bonuses(&self, student: StudentId) -> &HashMap<ProjectId, isize> {
         &self.student(student).bonuses
     }
 
-    pub fn bonus(&self, student: StudentId, project: ProjectId) -> Option<i32> {
+    pub fn bonus(&self, student: StudentId, project: ProjectId) -> Option<isize> {
         self.bonuses(student).get(&project).cloned()
     }
 

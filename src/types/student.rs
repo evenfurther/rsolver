@@ -9,7 +9,7 @@ pub struct Student {
     pub id: StudentId,
     pub name: String,
     pub rankings: Vec<ProjectId>,
-    pub bonuses: HashMap<ProjectId, i32>,
+    pub bonuses: HashMap<ProjectId, isize>,
 }
 
 impl Student {

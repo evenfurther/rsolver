@@ -48,7 +48,7 @@ fn solve_overflow_to_rank(a: &mut Assignments, rank: usize, rng: &mut Box<Rng>) 
 
 fn complete_projects_under_capacity(a: &mut Assignments, rng: &mut Box<Rng>) {
     let mut projects = a.filter_projects(|p| a.is_under_capacity(p));
-    projects.sort_by_key(|&p| (a.missing(p), -(a.size(p) as i32)));
+    projects.sort_by_key(|&p| (a.missing(p), -(a.size(p) as isize)));
     let mut students = a.unassigned_students();
     rng.shuffle(&mut students);
     println!("Completing {} projects under minimum capacity with {} unassigned students",
@@ -71,7 +71,7 @@ fn cancel_occurrence_under_capacity(a: &mut Assignments) -> bool {
     if projects.is_empty() {
         return false;
     }
-    projects.sort_by_key(|&p| -(a.missing(p) as i32));
+    projects.sort_by_key(|&p| -(a.missing(p) as isize));
     let project = projects[0];
     println!("Cancelling under capacity project: {}",
              a.project(project).name);

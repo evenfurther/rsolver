@@ -73,13 +73,13 @@ load!(load_students,
 
 load!(load_bonuses,
       "SELECT eleve_id, projet_id, poids FROM pref_override",
-      (StudentId, ProjectId, i32),
+      (StudentId, ProjectId, isize),
       (student_id, project_id, weight),
       (StudentId(student_id), ProjectId(project_id), weight));
 
 load!(load_preferences,
       "SELECT eleve_id, projet_id, poids FROM preferences",
-      (StudentId, ProjectId, i32),
+      (StudentId, ProjectId, isize),
       (student_id, project_id, weight),
       (StudentId(student_id), ProjectId(project_id), weight));
 
