@@ -1,10 +1,13 @@
 #[macro_use]
+extern crate clap;
+#[macro_use]
 extern crate error_chain;
 extern crate ini;
 extern crate mysql;
 extern crate rand;
 
 use algos::*;
+use clap::App;
 use errors::*;
 use ini::Ini;
 use loaders::*;
@@ -43,7 +46,7 @@ fn display_stats(a: &Assignments) -> Result<()> {
     Ok(())
 }
 
-fn load(conf: &Ini, solver: &HashMap<String, String>) -> Result<Assignments> {
+fn load(config: &Config, solver: &HashMap<String, String>) -> Result<Assignments> {
     let loader = match solver
               .get("loader")
               .unwrap_or(&"mysql".to_string())
@@ -51,30 +54,58 @@ fn load(conf: &Ini, solver: &HashMap<String, String>) -> Result<Assignments> {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
     };
-    let (students, projects) = loader.load(conf)?;
+    let (students, projects) = loader.load(config)?;
     Ok(Assignments::new(students, projects))
 }
 
+pub struct Config {
+    verbose: bool,
+    conf: Ini,
+}
+
+impl Config {
+    fn load(file_name: &str, verbose: bool) -> Result<Config> {
+        Ini::load_from_file(file_name)
+            .chain_err(|| "cannot load configuration file")
+            .map(|conf| {
+                     Config {
+                         verbose: verbose,
+                         conf: conf,
+                     }
+                 })
+    }
+}
+
 fn main() {
-    if let Err(e) = run() {
+    let matches = App::new("rsolver")
+        .about("Automatically assign projects to students")
+        .author(crate_authors!("\n"))
+        .version(crate_version!())
+        .args_from_usage("
+          -c,--config=[FILE] 'use FILE file instead of rsolver.ini'
+          -v,--verbose       'be verbose'")
+        .get_matches();
+    if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"),
+                                 matches.is_present("verbose"))
+               .and_then(|conf| run(&conf)) {
         let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
         std::process::exit(1);
     }
 }
 
-fn run() -> Result<()> {
-    let conf = Ini::load_from_file("rsolver.ini")
-        .chain_err(|| "cannot load configuration file")?;
-    let solver = conf.section(Some("solver".to_string()))
+fn run(config: &Config) -> Result<()> {
+    let solver = config
+        .conf
+        .section(Some("solver".to_string()))
         .ok_or("cannot find solver section")?;
-    let mut assignments = load(&conf, solver)?;
-    let algo = match solver
+    let assignments = load(config, solver)?;
+    let mut algo = match solver
               .get("algorithm")
               .unwrap_or(&"ordering".to_string())
               .as_str() {
-        "ordering" => Ordering {},
+        "ordering" => Ordering::new(config, assignments),
         other => bail!("unknown algorithm: {}", other),
     };
-    algo.assign(&conf, &mut assignments)?;
-    display_stats(&assignments)
+    algo.assign()?;
+    display_stats(algo.get_assignments())
 }

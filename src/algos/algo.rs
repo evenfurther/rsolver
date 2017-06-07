@@ -1,7 +1,7 @@
 use errors::*;
-use ini::Ini;
 use types::Assignments;
 
 pub trait Algo {
-    fn assign(&self, conf: &Ini, a: &mut Assignments) -> Result<()>;
+    fn assign(&mut self) -> Result<()>;
+    fn get_assignments(&self) -> &Assignments;
 }

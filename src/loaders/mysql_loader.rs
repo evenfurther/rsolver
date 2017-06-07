@@ -1,5 +1,5 @@
+use Config;
 use errors::*;
-use ini::Ini;
 use mysql as my;
 use std::collections::HashMap;
 use super::loader::Loader;
@@ -7,20 +7,21 @@ use types::*;
 
 pub struct MysqlLoader;
 
-fn pool(config: &Ini) -> Result<my::Pool> {
-    let (host, port, user, password, database) = match config.section(Some("mysql".to_string())) {
-        Some(section) => {
-            let port = section
-                .get("port")
-                .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
-            (section.get("host").cloned(),
-             port,
-             section.get("user").cloned(),
-             section.get("password").cloned(),
-             section.get("database").cloned())
-        }
-        None => (None, None, None, None, None),
-    };
+fn pool(config: &Config) -> Result<my::Pool> {
+    let (host, port, user, password, database) =
+        match config.conf.section(Some("mysql".to_string())) {
+            Some(section) => {
+                let port = section
+                    .get("port")
+                    .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
+                (section.get("host").cloned(),
+                 port,
+                 section.get("user").cloned(),
+                 section.get("password").cloned(),
+                 section.get("database").cloned())
+            }
+            None => (None, None, None, None, None),
+        };
     let mut opts = my::OptsBuilder::new();
     opts.ip_or_hostname(host)
         .tcp_port(port.unwrap_or(Ok(3306))?)
@@ -84,7 +85,7 @@ load!(load_preferences,
       (StudentId(student_id), ProjectId(project_id), weight));
 
 impl Loader for MysqlLoader {
-    fn load(&self, config: &Ini) -> Result<(Vec<Student>, Vec<Project>)> {
+    fn load(&self, config: &Config) -> Result<(Vec<Student>, Vec<Project>)> {
         let pool = pool(config)?;
         let mut projects = load_projects(&pool).chain_err(|| "cannot load projects")?;
         let mut students = load_students(&pool).chain_err(|| "cannot load students")?;

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 
 [dependencies]
+clap = "2.24"
 error-chain = "0.10.0"
 mysql = "11.1.2"
 rand = "0.3"
