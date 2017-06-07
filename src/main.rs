@@ -4,15 +4,16 @@ extern crate ini;
 extern crate mysql;
 extern crate rand;
 
-use algo::*;
+use algos::*;
 use errors::*;
 use ini::Ini;
 use loaders::*;
 use stats::*;
+use std::collections::HashMap;
 use std::io::Write;
 use types::*;
 
-mod algo;
+mod algos;
 mod loaders;
 mod stats;
 mod types;
@@ -41,10 +42,7 @@ fn display_stats(a: &Assignments) {
     }
 }
 
-fn load() -> Result<Assignments> {
-    let conf = Ini::load_from_file("rsolver.ini").expect("cannot load configuration file");
-    let solver = conf.section(Some("solver".to_string()))
-        .expect("cannot find solver section");
+fn load(conf: &Ini, solver: &HashMap<String, String>) -> Result<Assignments> {
     let loader = match solver
               .get("loader")
               .unwrap_or(&"mysql".to_string())
@@ -52,19 +50,31 @@ fn load() -> Result<Assignments> {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
     };
-    let (students, projects) = loader.load(&conf)?;
+    let (students, projects) = loader.load(conf)?;
     Ok(Assignments::new(students, projects))
 }
 
 fn main() {
-    match load() {
-        Ok(mut assignments) => {
-            assign(&mut assignments);
-            display_stats(&assignments);
-        }
-        Err(e) => {
-            let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
-            std::process::exit(1);
-        }
+    if let Err(e) = run() {
+        let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
+        std::process::exit(1);
     }
+}
+
+fn run() -> Result<()> {
+    let conf = Ini::load_from_file("rsolver.ini")
+        .chain_err(|| "cannot load configuration file")?;
+    let solver = conf.section(Some("solver".to_string()))
+        .ok_or("cannot find solver section")?;
+    let mut assignments = load(&conf, solver)?;
+    let algo = match solver
+              .get("algorithm")
+              .unwrap_or(&"ordering".to_string())
+              .as_str() {
+        "ordering" => Ordering {},
+        other => bail!("unknown algorithm: {}", other),
+    };
+    algo.assign(&conf, &mut assignments);
+    display_stats(&assignments);
+    Ok(())
 }

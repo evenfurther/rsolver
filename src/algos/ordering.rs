@@ -1,5 +1,29 @@
+use ini::Ini;
 use rand::{thread_rng, Rng};
+use super::Algo;
 use types::*;
+
+pub struct Ordering;
+
+impl Algo for Ordering {
+    fn assign(&self, conf: &Ini, a: &mut Assignments) {
+        let mut rng: Box<Rng> = Box::new(thread_rng());
+        first_non_cancelled_choice(a);
+        for rank in 1..a.projects.len() {
+            if !solve_overflow_to_rank(a, rank, &mut rng) {
+                println!("Everyone has been assigned up to rank {}", rank);
+                break;
+            }
+        }
+        complete_projects_under_capacity(a, &mut rng);
+
+        // If there are incomplete projects, cancel the incomplete projects with the
+        // most missing members and restart.
+        if cancel_occurrence_under_capacity(a) {
+            self.assign(conf, a);
+        }
+    }
+}
 
 fn first_non_cancelled_choice(a: &mut Assignments) {
     for student in a.unassigned_students() {
@@ -78,22 +102,4 @@ fn cancel_occurrence_under_capacity(a: &mut Assignments) -> bool {
     a.clear_all_assignments();
     a.cancel_occurrence(project);
     true
-}
-
-pub fn assign(a: &mut Assignments) {
-    let mut rng: Box<Rng> = Box::new(thread_rng());
-    first_non_cancelled_choice(a);
-    for rank in 1..a.projects.len() {
-        if !solve_overflow_to_rank(a, rank, &mut rng) {
-            println!("Everyone has been assigned up to rank {}", rank);
-            break;
-        }
-    }
-    complete_projects_under_capacity(a, &mut rng);
-
-    // If there are incomplete projects, cancel the incomplete projects with the
-    // most missing members and restart.
-    if cancel_occurrence_under_capacity(a) {
-        assign(a);
-    }
 }
