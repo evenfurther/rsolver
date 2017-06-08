@@ -39,8 +39,8 @@ impl<'a> Ordering<'a> {
         }
         if log_enabled!(Info) {
             info!("Overflowing projects at rank {}: {}",
-                   rank,
-                   overflowing_projects.len());
+                  rank,
+                  overflowing_projects.len());
             for p in overflowing_projects.clone() {
                 info!("  - {}", self.assignments.project(p).name);
             }
@@ -77,8 +77,8 @@ impl<'a> Ordering<'a> {
         let mut students = self.assignments.unassigned_students();
         self.rng.shuffle(&mut students);
         info!("Completing {} projects under minimum capacity with {} unassigned students",
-               projects.len(),
-               students.len());
+              projects.len(),
+              students.len());
         let mut students = students.into_iter();
         for project in projects {
             while self.assignments.is_under_capacity(project) {
@@ -100,7 +100,7 @@ impl<'a> Ordering<'a> {
         projects.sort_by_key(|&p| -(self.assignments.missing(p) as isize));
         let project = projects[0];
         info!("Cancelling under capacity project: {}",
-               self.assignments.project(project).name);
+              self.assignments.project(project).name);
         self.assignments.clear_all_assignments();
         self.assignments.cancel_occurrence(project);
         true

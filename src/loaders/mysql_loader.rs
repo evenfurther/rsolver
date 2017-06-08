@@ -8,7 +8,7 @@ use types::*;
 pub struct MysqlLoader;
 
 fn pool(config: &Config) -> Result<my::Pool> {
-    let (host, port, user, password, database) =
+    let (host, port, user, password, database, force_tcp) =
         match config.conf.section(Some("mysql".to_owned())) {
             Some(section) => {
                 let port = section
@@ -18,16 +18,20 @@ fn pool(config: &Config) -> Result<my::Pool> {
                  port,
                  section.get("user").cloned(),
                  section.get("password").cloned(),
-                 section.get("database").cloned())
+                 section.get("database").cloned(),
+                 section
+                     .get("force-tcp")
+                     .map(|p| p.parse::<bool>().chain_err(|| "parsing force-tcp")))
             }
-            None => (None, None, None, None, None),
+            None => (None, None, None, None, None, None),
         };
     let mut opts = my::OptsBuilder::new();
     opts.ip_or_hostname(host)
         .tcp_port(port.unwrap_or(Ok(3306))?)
+        .prefer_socket(!force_tcp.unwrap_or(Ok(false))?)
         .user(user)
         .pass(password)
-        .db_name(database.or_else(|| Some("solver".to_owned())));
+        .db_name(database.or_else(|| Some("rsolver".to_owned())));
     my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 
