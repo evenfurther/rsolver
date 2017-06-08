@@ -1,5 +1,6 @@
 use Config;
 use errors::*;
+use get_config;
 use mysql as my;
 use std::collections::HashMap;
 use super::loader::Loader;
@@ -8,30 +9,23 @@ use types::*;
 pub struct MysqlLoader;
 
 fn pool(config: &Config) -> Result<my::Pool> {
-    let (host, port, user, password, database, force_tcp) =
-        match config.conf.section(Some("mysql".to_owned())) {
-            Some(section) => {
-                let port = section
-                    .get("port")
-                    .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"));
-                (section.get("host").cloned(),
-                 port,
-                 section.get("user").cloned(),
-                 section.get("password").cloned(),
-                 section.get("database").cloned(),
-                 section
-                     .get("force-tcp")
-                     .map(|p| p.parse::<bool>().chain_err(|| "parsing force-tcp")))
-            }
-            None => (None, None, None, None, None, None),
-        };
+    let host = get_config(config, "mysql", "host");
+    let port = get_config(config, "mysql", "port")
+        .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"))
+        .unwrap_or(Ok(3306))?;
+    let user = get_config(config, "mysql", "user");
+    let password = get_config(config, "mysql", "password");
+    let database = get_config(config, "mysql", "database");
+    let force_tcp = get_config(config, "mysql", "force-tcp")
+        .map(|p| p.parse::<bool>().chain_err(|| "parsing force-tcp"))
+        .unwrap_or(Ok(false))?;
     let mut opts = my::OptsBuilder::new();
     opts.ip_or_hostname(host)
-        .tcp_port(port.unwrap_or(Ok(3306))?)
-        .prefer_socket(!force_tcp.unwrap_or(Ok(false))?)
+        .tcp_port(port)
+        .prefer_socket(!force_tcp)
         .user(user)
         .pass(password)
-        .db_name(database.or_else(|| Some("rsolver".to_owned())));
+        .db_name(database);
     my::Pool::new(opts).chain_err(|| "mysql connection")
 }
 

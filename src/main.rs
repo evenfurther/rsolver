@@ -49,8 +49,8 @@ fn display_stats(a: &Assignments) -> Result<()> {
     Ok(())
 }
 
-fn load(config: &Config, solver: &HashMap<String, String>) -> Result<Assignments> {
-    let loader = match solver.get("loader").unwrap_or(&"mysql".to_owned()).as_str() {
+fn load(config: &Config) -> Result<Assignments> {
+    let loader = match &get_config(config, "solver", "loader").unwrap_or("mysql".to_owned())[..] {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
     };
@@ -68,6 +68,14 @@ impl Config {
             .chain_err(|| "cannot load configuration file")
             .map(|conf| Config { conf: conf })
     }
+}
+
+pub fn get_config(config: &Config, section: &str, key: &str) -> Option<String> {
+    config
+        .conf
+        .section(Some(section.to_owned()))
+        .and_then(|s| s.get(key))
+        .cloned()
 }
 
 fn main() {
@@ -96,19 +104,13 @@ fn main() {
 }
 
 fn run(config: &Config) -> Result<()> {
-    let solver = config
-        .conf
-        .section(Some("solver".to_owned()))
-        .ok_or("cannot find solver section")?;
-    let mut assignments = load(config, solver)?;
+    let mut assignments = load(config)?;
     {
-        let mut algo = match solver
-                  .get("algorithm")
-                  .unwrap_or(&"ordering".to_owned())
-                  .as_str() {
-            "ordering" => Ordering::new(config, &mut assignments),
-            other => bail!("unknown algorithm: {}", other),
-        };
+        let mut algo =
+            match &get_config(config, "solver", "algorithm").unwrap_or("ordering".to_owned())[..] {
+                "ordering" => Ordering::new(config, &mut assignments),
+                other => bail!("unknown algorithm: {}", other),
+            };
         algo.assign()?;
     }
     display_stats(&assignments)
