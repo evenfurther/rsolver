@@ -2,7 +2,10 @@
 extern crate clap;
 #[macro_use]
 extern crate error_chain;
+extern crate flexi_logger;
 extern crate ini;
+#[macro_use]
+extern crate log;
 extern crate mysql;
 extern crate rand;
 
@@ -47,10 +50,7 @@ fn display_stats(a: &Assignments) -> Result<()> {
 }
 
 fn load(config: &Config, solver: &HashMap<String, String>) -> Result<Assignments> {
-    let loader = match solver
-              .get("loader")
-              .unwrap_or(&"mysql".to_owned())
-              .as_str() {
+    let loader = match solver.get("loader").unwrap_or(&"mysql".to_owned()).as_str() {
         "mysql" => MysqlLoader {},
         other => bail!("unknown loader: {}", other),
     };
@@ -59,20 +59,14 @@ fn load(config: &Config, solver: &HashMap<String, String>) -> Result<Assignments
 }
 
 pub struct Config {
-    verbose: bool,
     conf: Ini,
 }
 
 impl Config {
-    fn load(file_name: &str, verbose: bool) -> Result<Config> {
+    fn load(file_name: &str) -> Result<Config> {
         Ini::load_from_file(file_name)
             .chain_err(|| "cannot load configuration file")
-            .map(|conf| {
-                     Config {
-                         verbose: verbose,
-                         conf: conf,
-                     }
-                 })
+            .map(|conf| Config { conf: conf })
     }
 }
 
@@ -83,11 +77,19 @@ fn main() {
         .version(crate_version!())
         .args_from_usage("
           -c,--config=[FILE] 'use FILE file instead of rsolver.ini'
-          -v,--verbose       'be verbose'")
+          -v...              'set verbosity level'")
         .get_matches();
-    if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"),
-                                 matches.is_present("verbose"))
-               .and_then(|conf| run(&conf)) {
+    let level = match matches.occurrences_of("v") {
+        0 => "error",
+        1 => "info",
+        2 => "debug",
+        _ => "trace",
+    };
+    flexi_logger::LogOptions::new()
+        .init(Some(level.to_owned()))
+        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+    if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))
+           .and_then(|conf| run(&conf)) {
         let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
         std::process::exit(1);
     }

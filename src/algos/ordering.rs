@@ -1,5 +1,6 @@
 use Config;
 use errors::*;
+use log::LogLevel::Info;
 use rand::{thread_rng, Rng};
 use super::Algo;
 use types::*;
@@ -36,12 +37,12 @@ impl<'a> Ordering<'a> {
         if overflowing_projects.is_empty() {
             return false;
         }
-        if self.config.verbose {
-            println!("Overflowing projects at rank {}: {}",
-                     rank,
-                     overflowing_projects.len());
+        if log_enabled!(Info) {
+            info!("Overflowing projects at rank {}: {}",
+                   rank,
+                   overflowing_projects.len());
             for p in overflowing_projects.clone() {
-                println!("  - {}", self.assignments.project(p).name);
+                info!("  - {}", self.assignments.project(p).name);
             }
         }
         let mut overflowing_students = overflowing_projects
@@ -50,9 +51,7 @@ impl<'a> Ordering<'a> {
             .filter(|&s| !self.assignments.is_currently_pinned(*s))
             .cloned()
             .collect::<Vec<_>>();
-        if self.config.verbose {
-            println!("Potential students to move: {}", overflowing_students.len());
-        }
+        info!("Potential students to move: {}", overflowing_students.len());
         self.rng.shuffle(&mut overflowing_students);
         for student in overflowing_students {
             if let Some(project) = self.assignments.project_for(student) {
@@ -77,11 +76,9 @@ impl<'a> Ordering<'a> {
             .sort_by_key(|&p| (self.assignments.missing(p), -(self.assignments.size(p) as isize)));
         let mut students = self.assignments.unassigned_students();
         self.rng.shuffle(&mut students);
-        if self.config.verbose {
-            println!("Completing {} projects under minimum capacity with {} unassigned students",
-                     projects.len(),
-                     students.len());
-        }
+        info!("Completing {} projects under minimum capacity with {} unassigned students",
+               projects.len(),
+               students.len());
         let mut students = students.into_iter();
         for project in projects {
             while self.assignments.is_under_capacity(project) {
@@ -102,10 +99,8 @@ impl<'a> Ordering<'a> {
         }
         projects.sort_by_key(|&p| -(self.assignments.missing(p) as isize));
         let project = projects[0];
-        if self.config.verbose {
-            println!("Cancelling under capacity project: {}",
-                     self.assignments.project(project).name);
-        }
+        info!("Cancelling under capacity project: {}",
+               self.assignments.project(project).name);
         self.assignments.clear_all_assignments();
         self.assignments.cancel_occurrence(project);
         true
@@ -118,9 +113,7 @@ impl<'a> Algo for Ordering<'a> {
             self.first_non_cancelled_choice();
             for rank in 1..self.assignments.projects.len() {
                 if !self.solve_overflow_to_rank(rank) {
-                    if self.config.verbose {
-                        println!("Everyone has been assigned up to rank {}", rank);
-                    }
+                    info!("Everyone has been assigned up to rank {}", rank);
                     break;
                 }
             }
