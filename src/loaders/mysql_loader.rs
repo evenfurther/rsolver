@@ -47,28 +47,32 @@ macro_rules! load {
     }
 }
 
-load!(load_projects,
-      "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
-      Project,
-      (id, name, min_students, max_students, max_occurrences),
-      Project {
-          id: ProjectId(id),
-          name: name,
-          min_students: min_students,
-          max_students: max_students,
-          max_occurrences: max_occurrences,
-      });
+load!(
+    load_projects,
+    "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+    Project,
+    (id, name, min_students, max_students, max_occurrences),
+    Project {
+        id: ProjectId(id),
+        name: name,
+        min_students: min_students,
+        max_students: max_students,
+        max_occurrences: max_occurrences,
+    }
+);
 
-load!(load_students,
-      "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
-      Student,
-      (id, name),
-      Student {
-          id: StudentId(id),
-          name: name,
-          rankings: Vec::new(),
-          bonuses: HashMap::new(),
-      });
+load!(
+    load_students,
+    "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
+    Student,
+    (id, name),
+    Student {
+        id: StudentId(id),
+        name: name,
+        rankings: Vec::new(),
+        bonuses: HashMap::new(),
+    }
+);
 
 load!(load_bonuses,
       "SELECT eleve_id, projet_id, poids FROM pref_override",
@@ -87,19 +91,26 @@ impl Loader for MysqlLoader {
         let pool = pool(config)?;
         let mut projects = load_projects(&pool).chain_err(|| "cannot load projects")?;
         let mut students = load_students(&pool).chain_err(|| "cannot load students")?;
-        let preferences = load_preferences(&pool)
-            .chain_err(|| "cannot load rankings")?;
+        let preferences = load_preferences(&pool).chain_err(|| "cannot load rankings")?;
         let bonuses = load_bonuses(&pool).chain_err(|| "cannot load bonuses")?;
         for student in &mut students {
             let mut preferences = preferences
                 .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
+                .filter_map(|&(s, p, w)| if s == student.id {
+                    Some((p, w))
+                } else {
+                    None
+                })
                 .collect::<Vec<_>>();
             preferences.sort_by_key(|&(_, w)| w);
             student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
             student.bonuses = bonuses
                 .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
+                .filter_map(|&(s, p, w)| if s == student.id {
+                    Some((p, -w))
+                } else {
+                    None
+                })
                 .collect();
         }
         super::remap(&mut students, &mut projects);

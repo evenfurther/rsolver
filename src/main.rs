@@ -30,20 +30,20 @@ mod errors {
 
 fn display_stats(a: &Assignments) -> Result<()> {
     let ranks = statistics(a);
-    let cumul = ranks
-        .iter()
-        .scan(0, |s, &r| {
-            *s += r;
-            Some(*s)
-        });
+    let cumul = ranks.iter().scan(0, |s, &r| {
+        *s += r;
+        Some(*s)
+    });
     let total: usize = ranks.iter().sum();
     for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
         if *n != 0 {
-            println!("  - rank {}: {} (cumulative {} - {:.2}%)",
-                     rank + 1,
-                     n,
-                     c,
-                     100.0 * c as f32 / total as f32);
+            println!(
+                "  - rank {}: {} (cumulative {} - {:.2}%)",
+                rank + 1,
+                n,
+                c,
+                100.0 * c as f32 / total as f32
+            );
         }
     }
     Ok(())
@@ -83,9 +83,11 @@ fn main() {
         .about("Automatically assign projects to students")
         .author(crate_authors!("\n"))
         .version(crate_version!())
-        .args_from_usage("
+        .args_from_usage(
+            "
           -c,--config=[FILE] 'use FILE file instead of rsolver.ini'
-          -v...              'set verbosity level'")
+          -v...              'set verbosity level'",
+        )
         .get_matches();
     let level = match matches.occurrences_of("v") {
         0 => "error",
@@ -97,7 +99,8 @@ fn main() {
         .init(Some(level.to_owned()))
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
     if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))
-           .and_then(|conf| run(&conf)) {
+        .and_then(|conf| run(&conf))
+    {
         let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
         std::process::exit(1);
     }

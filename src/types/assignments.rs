@@ -23,16 +23,17 @@ impl Assignments {
                 let project = ProjectId(project_id);
                 (0..slen)
                     .filter_map(|student_id| if let Some(bonus) = students[student_id]
-                                       .bonuses
-                                       .get(&project) {
-                                    if *bonus >= PINNING_BONUS {
-                                        Some(StudentId(student_id))
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                })
+                        .bonuses
+                        .get(&project)
+                    {
+                        if *bonus >= PINNING_BONUS {
+                            Some(StudentId(student_id))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    })
                     .collect()
             })
             .collect();
@@ -60,17 +61,18 @@ impl Assignments {
     }
 
     pub fn filter_projects<F>(&self, condition: F) -> Vec<ProjectId>
-        where F: Fn(ProjectId) -> bool
+    where
+        F: Fn(ProjectId) -> bool,
     {
         (0..self.projects.len())
             .filter_map(|project| {
-                            let project = ProjectId(project);
-                            if condition(project) {
-                                Some(project)
-                            } else {
-                                None
-                            }
-                        })
+                let project = ProjectId(project);
+                if condition(project) {
+                    Some(project)
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
@@ -114,9 +116,9 @@ impl Assignments {
     }
 
     pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
-        self.bonuses(student)
-            .get(&project)
-            .map_or(false, |b| *b >= PINNING_BONUS)
+        self.bonuses(student).get(&project).map_or(false, |b| {
+            *b >= PINNING_BONUS
+        })
     }
 
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
@@ -128,18 +130,24 @@ impl Assignments {
     }
 
     pub fn assign_to(&mut self, student: StudentId, project: ProjectId) {
-        assert!(self.project_for(student).is_none(),
-                "a project is already assigned to this student");
-        assert!(!self.is_cancelled(project),
-                "cannot assign to a cancelled project");
+        assert!(
+            self.project_for(student).is_none(),
+            "a project is already assigned to this student"
+        );
+        assert!(
+            !self.is_cancelled(project),
+            "cannot assign to a cancelled project"
+        );
         self.assigned_to[student.0] = Some(project);
         self.assigned[project.0].push(student);
     }
 
     pub fn unassign_from(&mut self, student: StudentId, project: ProjectId) {
-        assert_eq!(self.project_for(student),
-                   Some(project),
-                   "project not assigned to this student");
+        assert_eq!(
+            self.project_for(student),
+            Some(project),
+            "project not assigned to this student"
+        );
         self.assigned_to[student.0] = None;
         let pos = self.assigned[project.0]
             .iter()
@@ -149,8 +157,9 @@ impl Assignments {
     }
 
     pub fn unassign(&mut self, student: StudentId) {
-        let project = self.project_for(student)
-            .expect("student is not assigned to any project");
+        let project = self.project_for(student).expect(
+            "student is not assigned to any project",
+        );
         self.unassign_from(student, project);
     }
 
@@ -172,26 +181,30 @@ impl Assignments {
             .iter()
             .enumerate()
             .filter_map(|(id, assignment)| if assignment.is_none() {
-                            Some(StudentId(id))
-                        } else {
-                            None
-                        })
+                Some(StudentId(id))
+            } else {
+                None
+            })
             .collect()
     }
 
     pub fn cancel(&mut self, project: ProjectId) {
         assert!(!self.is_cancelled(project), "project is cancelled already");
-        assert!(self.assigned[project.0].is_empty(),
-                "cancelled project is assigned to some students");
+        assert!(
+            self.assigned[project.0].is_empty(),
+            "cancelled project is assigned to some students"
+        );
         self.max_occurrences[project.0] = 0;
     }
 
     pub fn cancel_occurrence(&mut self, project: ProjectId) {
         assert!(!self.is_cancelled(project), "project is cancelled already");
         self.max_occurrences[project.0] -= 1;
-        assert!(self.students_for(project).len() <=
+        assert!(
+            self.students_for(project).len() <=
                 self.max_occurrences[project.0] * self.project(project).max_students,
-                "cancelled occurrence still has to too many students assigned");
+            "cancelled occurrence still has to too many students assigned"
+        );
     }
 
     pub fn is_cancelled(&self, ProjectId(project): ProjectId) -> bool {
@@ -229,9 +242,12 @@ impl Assignments {
     }
 
     pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
-        assert!(!self.is_cancelled(project),
-                "a cancelled project cannot host anything");
-        self.project(project)
-            .can_host(self.max_occurrences[project.0])
+        assert!(
+            !self.is_cancelled(project),
+            "a cancelled project cannot host anything"
+        );
+        self.project(project).can_host(
+            self.max_occurrences[project.0],
+        )
     }
 }

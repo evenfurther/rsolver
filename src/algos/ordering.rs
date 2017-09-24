@@ -32,15 +32,18 @@ impl<'a> Ordering<'a> {
     }
 
     fn solve_overflow_to_rank(&mut self, rank: usize) -> bool {
-        let overflowing_projects = self.assignments
-            .filter_projects(|p| self.assignments.is_over_capacity(p));
+        let overflowing_projects = self.assignments.filter_projects(
+            |p| self.assignments.is_over_capacity(p),
+        );
         if overflowing_projects.is_empty() {
             return false;
         }
         if log_enabled!(Info) {
-            info!("Overflowing projects at rank {}: {}",
-                  rank,
-                  overflowing_projects.len());
+            info!(
+                "Overflowing projects at rank {}: {}",
+                rank,
+                overflowing_projects.len()
+            );
             for p in overflowing_projects.clone() {
                 info!("  - {}", self.assignments.project(p).name);
             }
@@ -58,7 +61,8 @@ impl<'a> Ordering<'a> {
                 if self.assignments.is_over_capacity(project) {
                     if let Some(project) = self.assignments.project_at_rank(student, rank) {
                         if !self.assignments.is_cancelled(project) &&
-                           !self.assignments.is_at_capacity(project) {
+                            !self.assignments.is_at_capacity(project)
+                        {
                             self.assignments.unassign(student);
                             self.assignments.assign_to(student, project);
                         }
@@ -70,15 +74,22 @@ impl<'a> Ordering<'a> {
     }
 
     fn complete_projects_under_capacity(&mut self) {
-        let mut projects = self.assignments
-            .filter_projects(|p| self.assignments.is_under_capacity(p));
-        projects
-            .sort_by_key(|&p| (self.assignments.missing(p), -(self.assignments.size(p) as isize)));
+        let mut projects = self.assignments.filter_projects(
+            |p| self.assignments.is_under_capacity(p),
+        );
+        projects.sort_by_key(|&p| {
+            (
+                self.assignments.missing(p),
+                -(self.assignments.size(p) as isize),
+            )
+        });
         let mut students = self.assignments.unassigned_students();
         self.rng.shuffle(&mut students);
-        info!("Completing {} projects under minimum capacity with {} unassigned students",
-              projects.len(),
-              students.len());
+        info!(
+            "Completing {} projects under minimum capacity with {} unassigned students",
+            projects.len(),
+            students.len()
+        );
         let mut students = students.into_iter();
         for project in projects {
             while self.assignments.is_under_capacity(project) {
@@ -92,15 +103,18 @@ impl<'a> Ordering<'a> {
     }
 
     fn cancel_occurrence_under_capacity(&mut self) -> bool {
-        let mut projects = self.assignments
-            .filter_projects(|p| self.assignments.is_under_capacity(p));
+        let mut projects = self.assignments.filter_projects(
+            |p| self.assignments.is_under_capacity(p),
+        );
         if projects.is_empty() {
             return false;
         }
         projects.sort_by_key(|&p| -(self.assignments.missing(p) as isize));
         let project = projects[0];
-        info!("Cancelling under capacity project: {}",
-              self.assignments.project(project).name);
+        info!(
+            "Cancelling under capacity project: {}",
+            self.assignments.project(project).name
+        );
         self.assignments.clear_all_assignments();
         self.assignments.cancel_occurrence(project);
         true
