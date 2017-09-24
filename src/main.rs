@@ -15,7 +15,6 @@ use errors::*;
 use ini::Ini;
 use loaders::*;
 use stats::*;
-use std::collections::HashMap;
 use std::io::Write;
 use types::*;
 
@@ -50,10 +49,11 @@ fn display_stats(a: &Assignments) -> Result<()> {
 }
 
 fn load(config: &Config) -> Result<Assignments> {
-    let loader = match &get_config(config, "solver", "loader").unwrap_or("mysql".to_owned())[..] {
-        "mysql" => MysqlLoader {},
-        other => bail!("unknown loader: {}", other),
-    };
+    let loader =
+        match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
+            "mysql" => MysqlLoader {},
+            other => bail!("unknown loader: {}", other),
+        };
     let (students, projects) = loader.load(config)?;
     Ok(Assignments::new(students, projects))
 }
@@ -109,11 +109,15 @@ fn main() {
 fn run(config: &Config) -> Result<()> {
     let mut assignments = load(config)?;
     {
-        let mut algo =
-            match &get_config(config, "solver", "algorithm").unwrap_or("ordering".to_owned())[..] {
-                "ordering" => Ordering::new(config, &mut assignments),
-                other => bail!("unknown algorithm: {}", other),
-            };
+        let mut algo = match &get_config(config, "solver", "algorithm").unwrap_or_else(
+            || {
+                "ordering".to_owned()
+            },
+        )
+            [..] {
+            "ordering" => Ordering::new(&mut assignments),
+            other => bail!("unknown algorithm: {}", other),
+        };
         algo.assign()?;
     }
     display_stats(&assignments)
