@@ -95,8 +95,8 @@ fn main() {
         2 => "debug",
         _ => "trace",
     };
-    flexi_logger::LogOptions::new()
-        .init(Some(level.to_owned()))
+    flexi_logger::Logger::with_str(level)
+        .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
     if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))
         .and_then(|conf| run(&conf))
