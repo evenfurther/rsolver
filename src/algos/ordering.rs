@@ -1,5 +1,5 @@
 use errors::*;
-use log::LogLevel::Info;
+use log::Level::Info;
 use rand::{thread_rng, Rng};
 use super::Algo;
 use types::*;
