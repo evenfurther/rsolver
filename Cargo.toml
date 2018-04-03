@@ -6,7 +6,7 @@ authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 [dependencies]
 clap = "2.24"
 error-chain = "0.11.0"
-flexi_logger = "0.6.8"
+flexi_logger = "0.8"
 log = "0.4"
 mysql = "12.0.3"
 rand = "0.4"
