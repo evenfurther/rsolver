@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use super::ProjectId;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct StudentId(pub usize);

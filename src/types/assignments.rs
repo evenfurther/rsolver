@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use super::*;
+use std::collections::HashMap;
 
 const PINNING_BONUS: isize = 1000;
 
@@ -22,17 +22,16 @@ impl Assignments {
             .map(|project_id| {
                 let project = ProjectId(project_id);
                 (0..slen)
-                    .filter_map(|student_id| if let Some(bonus) = students[student_id]
-                        .bonuses
-                        .get(&project)
-                    {
-                        if *bonus >= PINNING_BONUS {
-                            Some(StudentId(student_id))
+                    .filter_map(|student_id| {
+                        if let Some(bonus) = students[student_id].bonuses.get(&project) {
+                            if *bonus >= PINNING_BONUS {
+                                Some(StudentId(student_id))
+                            } else {
+                                None
+                            }
                         } else {
                             None
                         }
-                    } else {
-                        None
                     })
                     .collect()
             })
@@ -116,9 +115,9 @@ impl Assignments {
     }
 
     pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
-        self.bonuses(student).get(&project).map_or(false, |b| {
-            *b >= PINNING_BONUS
-        })
+        self.bonuses(student)
+            .get(&project)
+            .map_or(false, |b| *b >= PINNING_BONUS)
     }
 
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
@@ -157,9 +156,8 @@ impl Assignments {
     }
 
     pub fn unassign(&mut self, student: StudentId) {
-        let project = self.project_for(student).expect(
-            "student is not assigned to any project",
-        );
+        let project = self.project_for(student)
+            .expect("student is not assigned to any project");
         self.unassign_from(student, project);
     }
 
@@ -180,10 +178,12 @@ impl Assignments {
         self.assigned_to
             .iter()
             .enumerate()
-            .filter_map(|(id, assignment)| if assignment.is_none() {
-                Some(StudentId(id))
-            } else {
-                None
+            .filter_map(|(id, assignment)| {
+                if assignment.is_none() {
+                    Some(StudentId(id))
+                } else {
+                    None
+                }
             })
             .collect()
     }
@@ -201,8 +201,8 @@ impl Assignments {
         assert!(!self.is_cancelled(project), "project is cancelled already");
         self.max_occurrences[project.0] -= 1;
         assert!(
-            self.students_for(project).len() <=
-                self.max_occurrences[project.0] * self.project(project).max_students,
+            self.students_for(project).len()
+                <= self.max_occurrences[project.0] * self.project(project).max_students,
             "cancelled occurrence still has to too many students assigned"
         );
     }
@@ -246,8 +246,7 @@ impl Assignments {
             !self.is_cancelled(project),
             "a cancelled project cannot host anything"
         );
-        self.project(project).can_host(
-            self.max_occurrences[project.0],
-        )
+        self.project(project)
+            .can_host(self.max_occurrences[project.0])
     }
 }

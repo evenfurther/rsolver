@@ -29,9 +29,7 @@ impl Project {
     #[cfg(test)]
     pub fn acceptable(&self, occ: usize, n: usize) -> bool {
         assert!(occ <= self.max_occurrences);
-        (1..occ + 1).any(|occ| {
-            n >= occ * self.min_students && n <= occ * self.max_students
-        })
+        (1..occ + 1).any(|occ| n >= occ * self.min_students && n <= occ * self.max_students)
     }
 }
 

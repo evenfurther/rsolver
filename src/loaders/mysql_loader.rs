@@ -1,9 +1,9 @@
+use super::loader::Loader;
 use Config;
 use errors::*;
 use get_config;
 use mysql as my;
 use std::collections::HashMap;
-use super::loader::Loader;
 use types::*;
 
 pub struct MysqlLoader;
@@ -32,19 +32,18 @@ fn pool(config: &Config) -> Result<my::Pool> {
 macro_rules! load {
     ($name:ident, $query:expr, $ty:ty, $pattern:pat, $value:expr) => {
         fn $name(pool: &my::Pool) -> my::Result<Vec<$ty>> {
-            pool.prep_exec($query, ())
-                .and_then(|result| {
-                    result.map(|row| {
+            pool.prep_exec($query, ()).and_then(|result| {
+                result
+                    .map(|row| {
                         row.map(|row| {
-                            let $pattern =
-                                my::from_row(row);
+                            let $pattern = my::from_row(row);
                             $value
                         })
                     })
                     .collect()
-                })
+            })
         }
-    }
+    };
 }
 
 load!(
@@ -74,17 +73,21 @@ load!(
     }
 );
 
-load!(load_bonuses,
-      "SELECT eleve_id, projet_id, poids FROM pref_override",
-      (StudentId, ProjectId, isize),
-      (student_id, project_id, weight),
-      (StudentId(student_id), ProjectId(project_id), weight));
+load!(
+    load_bonuses,
+    "SELECT eleve_id, projet_id, poids FROM pref_override",
+    (StudentId, ProjectId, isize),
+    (student_id, project_id, weight),
+    (StudentId(student_id), ProjectId(project_id), weight)
+);
 
-load!(load_preferences,
-      "SELECT eleve_id, projet_id, poids FROM preferences",
-      (StudentId, ProjectId, isize),
-      (student_id, project_id, weight),
-      (StudentId(student_id), ProjectId(project_id), weight));
+load!(
+    load_preferences,
+    "SELECT eleve_id, projet_id, poids FROM preferences",
+    (StudentId, ProjectId, isize),
+    (student_id, project_id, weight),
+    (StudentId(student_id), ProjectId(project_id), weight)
+);
 
 impl Loader for MysqlLoader {
     fn load(&self, config: &Config) -> Result<(Vec<Student>, Vec<Project>)> {
@@ -96,21 +99,13 @@ impl Loader for MysqlLoader {
         for student in &mut students {
             let mut preferences = preferences
                 .iter()
-                .filter_map(|&(s, p, w)| if s == student.id {
-                    Some((p, w))
-                } else {
-                    None
-                })
+                .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
                 .collect::<Vec<_>>();
             preferences.sort_by_key(|&(_, w)| w);
             student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
             student.bonuses = bonuses
                 .iter()
-                .filter_map(|&(s, p, w)| if s == student.id {
-                    Some((p, -w))
-                } else {
-                    None
-                })
+                .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
         }
         super::remap(&mut students, &mut projects);

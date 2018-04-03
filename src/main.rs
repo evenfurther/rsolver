@@ -109,12 +109,9 @@ fn main() {
 fn run(config: &Config) -> Result<()> {
     let mut assignments = load(config)?;
     {
-        let mut algo = match &get_config(config, "solver", "algorithm").unwrap_or_else(
-            || {
-                "ordering".to_owned()
-            },
-        )
-            [..] {
+        let mut algo = match &get_config(config, "solver", "algorithm")
+            .unwrap_or_else(|| "ordering".to_owned())[..]
+        {
             "ordering" => Ordering::new(&mut assignments),
             other => bail!("unknown algorithm: {}", other),
         };

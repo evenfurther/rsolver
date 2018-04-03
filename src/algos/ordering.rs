@@ -1,7 +1,7 @@
+use super::Algo;
 use errors::*;
 use log::Level::Info;
 use rand::{thread_rng, Rng};
-use super::Algo;
 use types::*;
 
 pub struct Ordering<'a> {
@@ -29,9 +29,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn solve_overflow_to_rank(&mut self, rank: usize) -> bool {
-        let overflowing_projects = self.assignments.filter_projects(
-            |p| self.assignments.is_over_capacity(p),
-        );
+        let overflowing_projects = self.assignments
+            .filter_projects(|p| self.assignments.is_over_capacity(p));
         if overflowing_projects.is_empty() {
             return false;
         }
@@ -57,8 +56,8 @@ impl<'a> Ordering<'a> {
             if let Some(project) = self.assignments.project_for(student) {
                 if self.assignments.is_over_capacity(project) {
                     if let Some(project) = self.assignments.project_at_rank(student, rank) {
-                        if !self.assignments.is_cancelled(project) &&
-                            !self.assignments.is_at_capacity(project)
+                        if !self.assignments.is_cancelled(project)
+                            && !self.assignments.is_at_capacity(project)
                         {
                             self.assignments.unassign(student);
                             self.assignments.assign_to(student, project);
@@ -71,9 +70,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn complete_projects_under_capacity(&mut self) {
-        let mut projects = self.assignments.filter_projects(
-            |p| self.assignments.is_under_capacity(p),
-        );
+        let mut projects = self.assignments
+            .filter_projects(|p| self.assignments.is_under_capacity(p));
         projects.sort_by_key(|&p| {
             (
                 self.assignments.missing(p),
@@ -100,9 +98,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn cancel_occurrence_under_capacity(&mut self) -> bool {
-        let mut projects = self.assignments.filter_projects(
-            |p| self.assignments.is_under_capacity(p),
-        );
+        let mut projects = self.assignments
+            .filter_projects(|p| self.assignments.is_under_capacity(p));
         if projects.is_empty() {
             return false;
         }
