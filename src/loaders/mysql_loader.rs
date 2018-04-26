@@ -1,10 +1,10 @@
 use super::loader::Loader;
-use Config;
 use errors::*;
 use get_config;
 use mysql as my;
 use std::collections::HashMap;
 use types::*;
+use Config;
 
 pub struct MysqlLoader;
 
@@ -53,10 +53,10 @@ load!(
     (id, name, min_students, max_students, max_occurrences),
     Project {
         id: ProjectId(id),
-        name: name,
-        min_students: min_students,
-        max_students: max_students,
-        max_occurrences: max_occurrences,
+        name,
+        min_students,
+        max_students,
+        max_occurrences,
     }
 );
 
@@ -67,7 +67,7 @@ load!(
     (id, name),
     Student {
         id: StudentId(id),
-        name: name,
+        name,
         rankings: Vec::new(),
         bonuses: HashMap::new(),
     }

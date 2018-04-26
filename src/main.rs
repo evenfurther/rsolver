@@ -66,7 +66,7 @@ impl Config {
     fn load(file_name: &str) -> Result<Config> {
         Ini::load_from_file(file_name)
             .chain_err(|| "cannot load configuration file")
-            .map(|conf| Config { conf: conf })
+            .map(|conf| Config { conf })
     }
 }
 

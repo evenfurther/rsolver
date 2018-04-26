@@ -12,7 +12,7 @@ pub struct Ordering<'a> {
 impl<'a> Ordering<'a> {
     pub fn new(assignments: &'a mut Assignments) -> Ordering<'a> {
         Ordering {
-            assignments: assignments,
+            assignments,
             rng: Box::new(thread_rng()),
         }
     }

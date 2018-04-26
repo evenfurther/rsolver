@@ -38,12 +38,12 @@ impl Assignments {
             .collect();
         let max_occurrences = projects.iter().map(|p| p.max_occurrences).collect();
         Assignments {
-            students: students,
-            projects: projects,
-            max_occurrences: max_occurrences,
+            students,
+            projects,
+            max_occurrences,
             assigned_to: vec![None; slen],
             assigned: vec![Vec::new(); plen],
-            pinned: pinned,
+            pinned,
         }
     }
 
