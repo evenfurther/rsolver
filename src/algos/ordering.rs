@@ -1,19 +1,20 @@
 use super::Algo;
 use errors::*;
 use log::Level::Info;
-use rand::{thread_rng, Rng};
+use rand::rngs::ThreadRng;
+use rand::{self, Rng};
 use types::*;
 
 pub struct Ordering<'a> {
     assignments: &'a mut Assignments,
-    rng: Box<Rng>,
+    rng: ThreadRng,
 }
 
 impl<'a> Ordering<'a> {
     pub fn new(assignments: &'a mut Assignments) -> Ordering<'a> {
         Ordering {
             assignments,
-            rng: Box::new(thread_rng()),
+            rng: rand::thread_rng(),
         }
     }
 
