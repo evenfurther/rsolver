@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate clap;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate flexi_logger;
 extern crate ini;
 #[macro_use]
@@ -13,7 +13,7 @@ extern crate rand;
 
 use algos::*;
 use clap::App;
-use errors::*;
+use failure::*;
 use ini::Ini;
 use loaders::*;
 use stats::*;
@@ -24,10 +24,6 @@ mod algos;
 mod loaders;
 mod stats;
 mod types;
-
-mod errors {
-    error_chain!{}
-}
 
 fn display_details(a: &Assignments) {
     let mut projects = a.projects.clone();
@@ -112,10 +108,10 @@ pub struct Config {
 }
 
 impl Config {
-    fn load(file_name: &str) -> Result<Config> {
-        Ini::load_from_file(file_name)
-            .chain_err(|| "cannot load configuration file")
-            .map(|conf| Config { conf })
+    fn load(file_name: &str) -> Result<Config, Error> {
+        Ok(Config {
+            conf: Ini::load_from_file(file_name).context("cannot load configuration file")?,
+        })
     }
 }
 
@@ -156,7 +152,7 @@ fn main() {
     }
 }
 
-fn run(config: &Config) -> Result<()> {
+fn run(config: &Config) -> Result<(), Error> {
     let mut loader =
         match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
             "mysql" => MysqlLoader::new(config)?,

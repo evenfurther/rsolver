@@ -1,5 +1,5 @@
 use super::Algo;
-use errors::*;
+use failure::Error;
 use log::Level::Info;
 use rand::rngs::ThreadRng;
 use rand::{self, Rng};
@@ -120,7 +120,7 @@ impl<'a> Ordering<'a> {
 }
 
 impl<'a> Algo for Ordering<'a> {
-    fn assign(&mut self) -> Result<()> {
+    fn assign(&mut self) -> Result<(), Error> {
         loop {
             self.first_non_cancelled_choice();
             for rank in 1..self.assignments.projects.len() {

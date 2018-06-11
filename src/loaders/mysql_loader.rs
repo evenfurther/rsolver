@@ -1,5 +1,5 @@
 use super::loader::Loader;
-use errors::*;
+use failure::{Error, ResultExt};
 use get_config;
 use mysql as my;
 use std::collections::HashMap;
@@ -30,16 +30,16 @@ macro_rules! load {
 }
 
 impl MysqlLoader {
-    pub fn new(config: &Config) -> Result<MysqlLoader> {
+    pub fn new(config: &Config) -> Result<MysqlLoader, Error> {
         let host = get_config(config, "mysql", "host");
         let port = get_config(config, "mysql", "port")
-            .map(|p| p.parse::<u16>().chain_err(|| "parsing mysql port"))
+            .map(|p| p.parse::<u16>().context("parsing mysql port"))
             .unwrap_or(Ok(3306))?;
         let user = get_config(config, "mysql", "user");
         let password = get_config(config, "mysql", "password");
         let database = get_config(config, "mysql", "database");
         let force_tcp = get_config(config, "mysql", "force-tcp")
-            .map(|p| p.parse::<bool>().chain_err(|| "parsing force-tcp"))
+            .map(|p| p.parse::<bool>().context("parsing force-tcp"))
             .unwrap_or(Ok(false))?;
         let mut opts = my::OptsBuilder::new();
         opts.ip_or_hostname(host)
@@ -48,13 +48,13 @@ impl MysqlLoader {
             .user(user)
             .pass(password)
             .db_name(database);
-        my::Pool::new(opts)
-            .chain_err(|| "mysql connection")
+        Ok(my::Pool::new(opts)
+            .context("mysql connection")
             .map(|pool| MysqlLoader {
                 pool,
                 students: Vec::new(),
                 projects: Vec::new(),
-            })
+            })?)
     }
 
     load!(
@@ -102,13 +102,11 @@ impl MysqlLoader {
 }
 
 impl Loader for MysqlLoader {
-    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>)> {
-        self.projects = self.load_projects().chain_err(|| "cannot load projects")?;
-        self.students = self.load_students().chain_err(|| "cannot load students")?;
-        let preferences = self
-            .load_preferences()
-            .chain_err(|| "cannot load rankings")?;
-        let bonuses = self.load_bonuses().chain_err(|| "cannot load bonuses")?;
+    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
+        self.projects = self.load_projects().context("cannot load projects")?;
+        self.students = self.load_students().context("cannot load students")?;
+        let preferences = self.load_preferences().context("cannot load rankings")?;
+        let bonuses = self.load_bonuses().context("cannot load bonuses")?;
         for student in &mut self.students {
             let mut preferences = preferences
                 .iter()
@@ -127,16 +125,16 @@ impl Loader for MysqlLoader {
         Ok((students, projects))
     }
 
-    fn save(&self, assignments: &Assignments) -> Result<()> {
+    fn save(&self, assignments: &Assignments) -> Result<(), Error> {
         let mut stmt = self
             .pool
             .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
-            .chain_err(|| "cannot prepare statement")?;
+            .context("cannot prepare statement")?;
         for s in &assignments.students {
             stmt.execute(params!{
                 "id" => self.students[s.id.0].id.0,
                 "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
-            }).chain_err(|| "cannot save attributions")?;
+            }).context("cannot save attributions")?;
         }
         Ok(())
     }

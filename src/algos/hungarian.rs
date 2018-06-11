@@ -1,5 +1,5 @@
 use super::Algo;
-use errors::*;
+use failure::Error;
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
@@ -54,7 +54,7 @@ impl<'a> Hungarian<'a> {
 }
 
 impl<'a> Algo for Hungarian<'a> {
-    fn assign(&mut self) -> Result<()> {
+    fn assign(&mut self) -> Result<(), Error> {
         self.hungarian_algorithm();
         // Remove non-voting students for now
         for s in 0..self.assignments.students.len() {
