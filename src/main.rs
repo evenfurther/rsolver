@@ -89,14 +89,27 @@ fn display_empty(a: &Assignments) {
     }
 }
 
+fn check_pinned_consistency(a: &Assignments) {
+    for s in &a.students {
+        if let Some(p) = a.rankings(s.id).get(0) {
+            if a.is_pinned_for(s.id, *p) && a.project_for(s.id) != Some(*p) {
+                println!(
+                    "WARNING: student {} did not get pinned project {}",
+                    s.name,
+                    a.project(*p).name
+                );
+            }
+        }
+    }
+}
+
 fn load(config: &Config) -> Result<Assignments> {
     let loader =
         match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => MysqlLoader {},
+            "mysql" => MysqlLoader::new(config)?,
             other => bail!("unknown loader: {}", other),
         };
-    let (students, projects) = loader.load(config)?;
-    Ok(Assignments::new(students, projects))
+    loader.load().map(|(s, p)| Assignments::new(s, p))
 }
 
 pub struct Config {
@@ -162,5 +175,6 @@ fn run(config: &Config) -> Result<()> {
     display_details(&assignments);
     display_stats(&assignments);
     display_empty(&assignments);
+    check_pinned_consistency(&assignments);
     Ok(())
 }
