@@ -255,7 +255,6 @@ impl Assignments {
             !self.is_cancelled(project),
             "a cancelled project cannot be acceptable"
         );
-        let students = self.students_for(project).len();
         let s = self.project(project).acceptable(
             self.max_occurrences[project.0],
             self.students_for(project).len(),

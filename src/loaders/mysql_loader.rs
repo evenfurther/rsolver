@@ -128,17 +128,15 @@ impl Loader for MysqlLoader {
     }
 
     fn save(&self, assignments: &Assignments) -> Result<()> {
-        for mut stmt in self
+        let mut stmt = self
             .pool
             .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
-            .into_iter()
-        {
-            for s in assignments.students.iter() {
-                stmt.execute(params!{
-                    "id" => self.students[s.id.0].id.0,
-                    "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
-                }).chain_err(|| "cannot save attributions")?;
-            }
+            .chain_err(|| "cannot prepare statement")?;
+        for s in &assignments.students {
+            stmt.execute(params!{
+                "id" => self.students[s.id.0].id.0,
+                "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
+            }).chain_err(|| "cannot save attributions")?;
         }
         Ok(())
     }

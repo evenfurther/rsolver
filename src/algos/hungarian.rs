@@ -41,7 +41,7 @@ impl<'a> Hungarian<'a> {
                             - self.assignments.bonus(s.id, p.id).unwrap_or(0);
                     }
                 }
-                for n in seats_for[&p.id].iter() {
+                for n in &seats_for[&p.id] {
                     prefs[&(s.id.0, *n)] = score;
                 }
             }
@@ -75,7 +75,7 @@ impl<'a> Algo for Hungarian<'a> {
             .assignments
             .filter_projects(|p| self.assignments.is_open(p) && !self.assignments.acceptable(p));
         incomplete.sort_by_key(|&p| self.assignments.open_spots_for(p)[0]);
-        for p in incomplete.into_iter() {
+        for p in incomplete {
             for _ in 0..self.assignments.open_spots_for(p)[0].min(unassigned.len()) {
                 let s = unassigned.pop().unwrap();
                 debug!(
@@ -148,7 +148,7 @@ impl<'a> Algo for Hungarian<'a> {
                     .map(|&s| {
                         self.assignments
                             .rank_of(s, p)
-                            .unwrap_or(self.assignments.projects.len())
+                            .unwrap_or_else(|| self.assignments.projects.len())
                     })
                     .sum::<usize>();
                 let missing = self.assignments.open_spots_for(p)[0];
