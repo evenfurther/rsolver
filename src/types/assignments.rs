@@ -120,6 +120,10 @@ impl Assignments {
             .map_or(false, |b| *b >= PINNING_BONUS)
     }
 
+    pub fn is_pinned_and_has_chosen(&self, student: StudentId, project: ProjectId) -> bool {
+        self.is_pinned_for(student, project) && self.rank_of(student, project) == Some(0)
+    }
+
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
         if let Some(project) = self.project_for(student) {
             self.is_pinned_for(student, project)
@@ -212,8 +216,12 @@ impl Assignments {
         self.max_occurrences[project] == 0
     }
 
+    pub fn max_occurrences(&self, ProjectId(project): ProjectId) -> usize {
+        self.max_occurrences[project]
+    }
+
     pub fn is_open(&self, project: ProjectId) -> bool {
-        !self.students_for(project).is_empty()
+        !self.is_cancelled(project) && !self.students_for(project).is_empty()
     }
 
     pub fn size(&self, project: ProjectId) -> usize {
@@ -240,6 +248,33 @@ impl Assignments {
 
     pub fn missing(&self, project: ProjectId) -> usize {
         self.min_students(project) - self.size(project)
+    }
+
+    pub fn acceptable(&self, project: ProjectId) -> bool {
+        assert!(
+            !self.is_cancelled(project),
+            "a cancelled project cannot be acceptable"
+        );
+        let students = self.students_for(project).len();
+        let s = self.project(project).acceptable(
+            self.max_occurrences[project.0],
+            self.students_for(project).len(),
+        );
+        if !s && self.open_spots_for(project).is_empty() {
+            debug!("acceptable {:?}, {:?}", s, self.open_spots_for(project));
+            let p = self.project(project);
+            println!(
+                "project min = {}, max = {}, max_occ = {}, occ = {}",
+                p.min_students, p.max_students, p.max_occurrences, self.max_occurrences[project.0]
+            );
+            println!("students = {}", self.students_for(project).len());
+            println!(
+                "can_host = {:?}",
+                p.can_host(self.max_occurrences[project.0])
+            );
+            println!("open_spots = {:?}", self.open_spots_for(project));
+        }
+        s
     }
 
     pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {

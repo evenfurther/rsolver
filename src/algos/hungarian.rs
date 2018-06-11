@@ -19,7 +19,7 @@ impl<'a> Hungarian<'a> {
         let mut seats = Vec::new();
         let mut seats_for = HashMap::new();
         for p in &self.assignments.projects {
-            let n = p.max_students * p.max_occurrences;
+            let n = p.max_students * self.assignments.max_occurrences(p.id);
             seats_for.insert(p.id, (seats.len()..seats.len() + n).collect::<Vec<_>>());
             for _ in 0..n {
                 seats.push(p.id);
@@ -73,10 +73,10 @@ impl<'a> Algo for Hungarian<'a> {
         // with the less-incomplete projects.
         let mut incomplete = self
             .assignments
-            .filter_projects(|p| self.assignments.is_under_capacity(p));
-        incomplete.sort_by_key(|&p| self.assignments.missing(p));
+            .filter_projects(|p| self.assignments.is_open(p) && !self.assignments.acceptable(p));
+        incomplete.sort_by_key(|&p| self.assignments.open_spots_for(p)[0]);
         for p in incomplete.into_iter() {
-            for _ in 0..self.assignments.missing(p).min(unassigned.len()) {
+            for _ in 0..self.assignments.open_spots_for(p)[0].min(unassigned.len()) {
                 let s = unassigned.pop().unwrap();
                 debug!(
                     "Assigning {} to incomplete project {}",
@@ -126,25 +126,41 @@ impl<'a> Algo for Hungarian<'a> {
                 self.assignments.assign_to(unassigned.pop().unwrap(), p);
             }
         }
-        // If we have a project with missing students, remove it from the list and restart.
+        // If we have projects which are not satisfied, remove one occurrence
+        // (preferably in projects with many occurrences) and start again.
+        // The number of pinned students also decreases the probability of removing
+        // the project.
         if let Some(to_cancel) = (0..self.assignments.projects.len())
             .map(ProjectId)
             .filter(|&p| {
-                let n = self.assignments.students_for(p).len();
                 !self.assignments.is_cancelled(p)
-                    && n > 0
-                    && n < self.assignments.project(p).min_students
+                    && self.assignments.is_open(p)
+                    && !self.assignments.acceptable(p)
             })
             .max_by_key(|&p| {
-                let n = self.assignments.students_for(p).len();
-                self.assignments.project(p).min_students - n
+                let students = self.assignments.students_for(p);
+                let pinned = students
+                    .iter()
+                    .filter(|&s| self.assignments.is_pinned_and_has_chosen(*s, p))
+                    .count() as isize;
+                let ranks = students
+                    .iter()
+                    .map(|&s| {
+                        self.assignments
+                            .rank_of(s, p)
+                            .unwrap_or(self.assignments.projects.len())
+                    })
+                    .sum::<usize>();
+                let missing = self.assignments.open_spots_for(p)[0];
+                (self.assignments.max_occurrences(p), -pinned, missing, ranks)
             }) {
-            info!(
-                "Canceling project {}",
-                self.assignments.project(to_cancel).name
-            );
             self.assignments.clear_all_assignments();
-            self.assignments.cancel(to_cancel);
+            self.assignments.cancel_occurrence(to_cancel);
+            info!(
+                "Canceling occurrence of project {}, remaining occurrences: {}",
+                self.assignments.project(to_cancel).name,
+                self.assignments.max_occurrences(to_cancel),
+            );
             return self.assign();
         }
         Ok(())
