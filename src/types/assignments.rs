@@ -247,7 +247,11 @@ impl Assignments {
             !self.is_cancelled(project),
             "a cancelled project cannot host anything"
         );
+        let students = self.students_for(project).len();
         self.project(project)
             .can_host(self.max_occurrences[project.0])
+            .into_iter()
+            .filter_map(|n| if n > students { Some(n - students) } else { None })
+            .collect()
     }
 }
