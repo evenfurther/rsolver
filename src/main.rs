@@ -30,16 +30,19 @@ mod errors {
 }
 
 fn display_details(a: &Assignments) {
-    for p in &a.projects {
-        let students = a.students_for(p.id);
+    let mut projects = a.projects.clone();
+    projects.sort_by_key(|ref p| p.name.clone());
+    for p in &projects {
+        let mut students = a.students_for(p.id).clone();
+        students.sort_by_key(|&s| a.student(s).name.clone());
         if !students.is_empty() {
             println!("{}:", p.name);
             for s in students {
-                print!("  - {}", a.student(*s).name);
-                if let Some(rank) = a.rank_of(*s, p.id) {
+                print!("  - {}", a.student(s).name);
+                if let Some(rank) = a.rank_of(s, p.id) {
                     print!(" (rank {})", rank + 1);
                 }
-                if a.is_pinned_for(*s, p.id) {
+                if a.is_pinned_for(s, p.id) {
                     print!(" (pinned)");
                 }
                 println!();
