@@ -7,6 +7,7 @@ extern crate ini;
 #[macro_use]
 extern crate log;
 extern crate mysql;
+extern crate pathfinding;
 extern crate rand;
 
 use algos::*;
@@ -27,13 +28,44 @@ mod errors {
     error_chain!{}
 }
 
-fn display_stats(a: &Assignments) -> Result<()> {
+fn display_details(a: &Assignments) {
+    for p in &a.projects {
+        let students = a.students_for(p.id);
+        if !students.is_empty() {
+            println!("{}:", p.name);
+            for s in students {
+                print!("  - {}", a.student(*s).name);
+                if let Some(rank) = a.rank_of(*s, p.id) {
+                    print!(" (rank {})", rank + 1);
+                }
+                if a.is_pinned_for(*s, p.id) {
+                    print!(" (pinned)");
+                }
+                println!();
+            }
+            println!();
+        }
+    }
+}
+
+fn display_stats(a: &Assignments) {
+    let students = a.students.len();
+    let lazy = (0..students)
+        .filter(|&s| a.rankings(StudentId(s)).is_empty())
+        .count();
+    println!(
+        "Students registered/unregistered/total: {}/{}/{}",
+        students - lazy,
+        lazy,
+        students
+    );
     let ranks = statistics(a);
     let cumul = ranks.iter().scan(0, |s, &r| {
         *s += r;
         Some(*s)
     });
     let total: usize = ranks.iter().sum();
+    println!("Final ranking:");
     for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
         if *n != 0 {
             println!(
@@ -45,7 +77,16 @@ fn display_stats(a: &Assignments) -> Result<()> {
             );
         }
     }
-    Ok(())
+}
+
+fn display_empty(a: &Assignments) {
+    let projects = a.filter_projects(|p| !a.is_open(p));
+    if !projects.is_empty() {
+        println!("Empty projects:");
+        for p in projects {
+            println!("  - {}", a.project(p).name);
+        }
+    }
 }
 
 fn load(config: &Config) -> Result<Assignments> {
@@ -109,13 +150,17 @@ fn main() {
 fn run(config: &Config) -> Result<()> {
     let mut assignments = load(config)?;
     {
-        let mut algo = match &get_config(config, "solver", "algorithm")
+        let mut algo: Box<Algo> = match &get_config(config, "solver", "algorithm")
             .unwrap_or_else(|| "ordering".to_owned())[..]
         {
-            "ordering" => Ordering::new(&mut assignments),
+            "ordering" => Box::new(Ordering::new(&mut assignments)),
+            "hungarian" => Box::new(Hungarian::new(&mut assignments)),
             other => bail!("unknown algorithm: {}", other),
         };
         algo.assign()?;
     }
-    display_stats(&assignments)
+    display_details(&assignments);
+    display_stats(&assignments);
+    display_empty(&assignments);
+    Ok(())
 }

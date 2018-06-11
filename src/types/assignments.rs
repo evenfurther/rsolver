@@ -156,7 +156,8 @@ impl Assignments {
     }
 
     pub fn unassign(&mut self, student: StudentId) {
-        let project = self.project_for(student)
+        let project = self
+            .project_for(student)
             .expect("student is not assigned to any project");
         self.unassign_from(student, project);
     }

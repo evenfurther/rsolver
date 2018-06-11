@@ -29,7 +29,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn solve_overflow_to_rank(&mut self, rank: usize) -> bool {
-        let overflowing_projects = self.assignments
+        let overflowing_projects = self
+            .assignments
             .filter_projects(|p| self.assignments.is_over_capacity(p));
         if overflowing_projects.is_empty() {
             return false;
@@ -70,7 +71,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn complete_projects_under_capacity(&mut self) {
-        let mut projects = self.assignments
+        let mut projects = self
+            .assignments
             .filter_projects(|p| self.assignments.is_under_capacity(p));
         projects.sort_by_key(|&p| {
             (
@@ -98,7 +100,8 @@ impl<'a> Ordering<'a> {
     }
 
     fn cancel_occurrence_under_capacity(&mut self) -> bool {
-        let mut projects = self.assignments
+        let mut projects = self
+            .assignments
             .filter_projects(|p| self.assignments.is_under_capacity(p));
         if projects.is_empty() {
             return false;
