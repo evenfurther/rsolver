@@ -116,7 +116,7 @@ impl<'a> Algo for Hungarian<'a> {
             }
         }
         // If we have a project with missing students, remove it from the list and restart.
-        if let Some(missing) = (0..self.assignments.projects.len())
+        if let Some(to_cancel) = (0..self.assignments.projects.len())
             .map(ProjectId)
             .filter(|&p| {
                 let n = self.assignments.students_for(p).len();
@@ -128,10 +128,11 @@ impl<'a> Algo for Hungarian<'a> {
                 let n = self.assignments.students_for(p).len();
                 self.assignments.project(p).min_students - n
             }) {
-            self.assignments.clear_all_assignments();
-            self.assignments.cancel(missing);
-            return self.assign();
-        }
+                info!("Canceling project {}", self.assignments.project(to_cancel).name);
+                self.assignments.clear_all_assignments();
+                self.assignments.cancel(to_cancel);
+                return self.assign();
+            }
         Ok(())
     }
 

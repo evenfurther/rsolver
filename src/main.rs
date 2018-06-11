@@ -94,7 +94,7 @@ fn check_pinned_consistency(a: &Assignments) {
     for s in &a.students {
         if let Some(p) = a.rankings(s.id).get(0) {
             if a.is_pinned_for(s.id, *p) && a.project_for(s.id) != Some(*p) {
-                println!(
+                warn!(
                     "WARNING: student {} did not get pinned project {}",
                     s.name,
                     a.project(*p).name
@@ -137,8 +137,9 @@ fn main() {
         .get_matches();
     let level = match matches.occurrences_of("v") {
         0 => "error",
-        1 => "info",
-        2 => "debug",
+        1 => "warn",
+        2 => "info",
+        3 => "debug",
         _ => "trace",
     };
     flexi_logger::Logger::with_str(format!("rsolver={}", level))
