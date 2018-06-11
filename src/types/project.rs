@@ -1,7 +1,7 @@
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct ProjectId(pub usize);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Project {
     pub id: ProjectId,
     pub name: String,

@@ -6,6 +6,7 @@ extern crate flexi_logger;
 extern crate ini;
 #[macro_use]
 extern crate log;
+#[macro_use]
 extern crate mysql;
 extern crate pathfinding;
 extern crate rand;
@@ -103,15 +104,6 @@ fn check_pinned_consistency(a: &Assignments) {
     }
 }
 
-fn load(config: &Config) -> Result<Assignments> {
-    let loader =
-        match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => MysqlLoader::new(config)?,
-            other => bail!("unknown loader: {}", other),
-        };
-    loader.load().map(|(s, p)| Assignments::new(s, p))
-}
-
 pub struct Config {
     conf: Ini,
 }
@@ -161,7 +153,12 @@ fn main() {
 }
 
 fn run(config: &Config) -> Result<()> {
-    let mut assignments = load(config)?;
+    let mut loader =
+        match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
+            "mysql" => MysqlLoader::new(config)?,
+            other => bail!("unknown loader: {}", other),
+        };
+    let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
     {
         let mut algo: Box<Algo> = match &get_config(config, "solver", "algorithm")
             .unwrap_or_else(|| "ordering".to_owned())[..]
@@ -172,6 +169,7 @@ fn run(config: &Config) -> Result<()> {
         };
         algo.assign()?;
     }
+    loader.save(&assignments)?;
     display_details(&assignments);
     display_stats(&assignments);
     display_empty(&assignments);

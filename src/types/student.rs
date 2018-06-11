@@ -1,10 +1,10 @@
 use super::ProjectId;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StudentId(pub usize);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Student {
     pub id: StudentId,
     pub name: String,

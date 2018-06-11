@@ -8,6 +8,8 @@ use Config;
 
 pub struct MysqlLoader {
     pool: my::Pool,
+    students: Vec<Student>,
+    projects: Vec<Project>,
 }
 
 macro_rules! load {
@@ -48,7 +50,11 @@ impl MysqlLoader {
             .db_name(database);
         my::Pool::new(opts)
             .chain_err(|| "mysql connection")
-            .map(|pool| MysqlLoader { pool })
+            .map(|pool| MysqlLoader {
+                pool,
+                students: Vec::new(),
+                projects: Vec::new(),
+            })
     }
 
     load!(
@@ -96,14 +102,14 @@ impl MysqlLoader {
 }
 
 impl Loader for MysqlLoader {
-    fn load(&self) -> Result<(Vec<Student>, Vec<Project>)> {
-        let mut projects = self.load_projects().chain_err(|| "cannot load projects")?;
-        let mut students = self.load_students().chain_err(|| "cannot load students")?;
+    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>)> {
+        self.projects = self.load_projects().chain_err(|| "cannot load projects")?;
+        self.students = self.load_students().chain_err(|| "cannot load students")?;
         let preferences = self
             .load_preferences()
             .chain_err(|| "cannot load rankings")?;
         let bonuses = self.load_bonuses().chain_err(|| "cannot load bonuses")?;
-        for student in &mut students {
+        for student in &mut self.students {
             let mut preferences = preferences
                 .iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
@@ -115,11 +121,25 @@ impl Loader for MysqlLoader {
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
         }
+        let mut students = self.students.clone();
+        let mut projects = self.projects.clone();
         super::remap(&mut students, &mut projects);
         Ok((students, projects))
     }
 
     fn save(&self, assignments: &Assignments) -> Result<()> {
+        for mut stmt in self
+            .pool
+            .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
+            .into_iter()
+        {
+            for s in assignments.students.iter() {
+                stmt.execute(params!{
+                    "id" => self.students[s.id.0].id.0,
+                    "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
+                }).chain_err(|| "cannot save attributions")?;
+            }
+        }
         Ok(())
     }
 }
