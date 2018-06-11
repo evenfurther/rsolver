@@ -78,6 +78,11 @@ impl<'a> Algo for Hungarian<'a> {
         for p in incomplete.into_iter() {
             for _ in 0..self.assignments.missing(p).min(unassigned.len()) {
                 let s = unassigned.pop().unwrap();
+                debug!(
+                    "Assigning {} to incomplete project {}",
+                    self.assignments.student(s).name,
+                    self.assignments.project(p).name
+                );
                 self.assignments.assign_to(s, p);
             }
         }
@@ -92,7 +97,13 @@ impl<'a> Algo for Hungarian<'a> {
                 .into_iter()
                 .min_by_key(|&p| self.assignments.open_spots_for(p)[0])
             {
-                self.assignments.assign_to(unassigned.pop().unwrap(), p);
+                let s = unassigned.pop().unwrap();
+                debug!(
+                    "Assigning {} to non-full project {}",
+                    self.assignments.student(s).name,
+                    self.assignments.project(p).name
+                );
+                self.assignments.assign_to(s, p);
             } else {
                 break;
             }
@@ -128,11 +139,14 @@ impl<'a> Algo for Hungarian<'a> {
                 let n = self.assignments.students_for(p).len();
                 self.assignments.project(p).min_students - n
             }) {
-                info!("Canceling project {}", self.assignments.project(to_cancel).name);
-                self.assignments.clear_all_assignments();
-                self.assignments.cancel(to_cancel);
-                return self.assign();
-            }
+            info!(
+                "Canceling project {}",
+                self.assignments.project(to_cancel).name
+            );
+            self.assignments.clear_all_assignments();
+            self.assignments.cancel(to_cancel);
+            return self.assign();
+        }
         Ok(())
     }
 

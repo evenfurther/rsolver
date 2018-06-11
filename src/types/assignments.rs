@@ -251,7 +251,13 @@ impl Assignments {
         self.project(project)
             .can_host(self.max_occurrences[project.0])
             .into_iter()
-            .filter_map(|n| if n > students { Some(n - students) } else { None })
+            .filter_map(|n| {
+                if n > students {
+                    Some(n - students)
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 }
