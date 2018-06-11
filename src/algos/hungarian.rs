@@ -68,13 +68,18 @@ impl<'a> Algo for Hungarian<'a> {
         // Unassigned students.
         let mut unassigned = self.assignments.unassigned_students();
 
-        // As long as we have incomplete non-empty projects,
-        // complete them with unassigned students, starting
-        // with the less-incomplete projects.
+        // As long as we have incomplete non-empty projects, complete them with unassigned
+        // students, starting with the less-incomplete projects and with the smallest
+        // rank sum.
         let mut incomplete = self
             .assignments
             .filter_projects(|p| self.assignments.is_open(p) && !self.assignments.acceptable(p));
-        incomplete.sort_by_key(|&p| self.assignments.open_spots_for(p)[0]);
+        incomplete.sort_by_key(|&p| {
+            (
+                self.assignments.open_spots_for(p)[0],
+                self.assignments.ranks_sum_of(p),
+            )
+        });
         for p in incomplete {
             for _ in 0..self.assignments.open_spots_for(p)[0].min(unassigned.len()) {
                 let s = unassigned.pop().unwrap();
@@ -87,7 +92,8 @@ impl<'a> Algo for Hungarian<'a> {
             }
         }
         // As long as we have non-full projects, complete them with unassigned students
-        // starting with projects lacking the smallest number of students.
+        // starting with projects lacking the smallest number of students and with the
+        // smaller rank sum.
         while !unassigned.is_empty() {
             if let Some(p) = self
                 .assignments
@@ -95,8 +101,12 @@ impl<'a> Algo for Hungarian<'a> {
                     self.assignments.is_open(p) && !self.assignments.is_at_capacity(p)
                 })
                 .into_iter()
-                .min_by_key(|&p| self.assignments.open_spots_for(p)[0])
-            {
+                .min_by_key(|&p| {
+                    (
+                        self.assignments.open_spots_for(p)[0],
+                        self.assignments.ranks_sum_of(p),
+                    )
+                }) {
                 let s = unassigned.pop().unwrap();
                 debug!(
                     "Assigning {} to non-full project {}",
@@ -143,14 +153,7 @@ impl<'a> Algo for Hungarian<'a> {
                     .iter()
                     .filter(|&s| self.assignments.is_pinned_and_has_chosen(*s, p))
                     .count() as isize;
-                let ranks = students
-                    .iter()
-                    .map(|&s| {
-                        self.assignments
-                            .rank_of(s, p)
-                            .unwrap_or_else(|| self.assignments.projects.len())
-                    })
-                    .sum::<usize>();
+                let ranks = self.assignments.ranks_sum_of(p);
                 let missing = self.assignments.open_spots_for(p)[0];
                 (self.assignments.max_occurrences(p), -pinned, missing, ranks)
             }) {
