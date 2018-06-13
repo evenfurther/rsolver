@@ -103,17 +103,6 @@ impl Assignments {
         self.student(student).rank_of(project)
     }
 
-    pub fn ranks_of(&self, project: ProjectId) -> Vec<usize> {
-        self.students_for(project)
-            .iter()
-            .filter_map(|&s| self.rank_of(s, project))
-            .collect()
-    }
-
-    pub fn ranks_sum_of(&self, project: ProjectId) -> usize {
-        self.ranks_of(project).into_iter().sum()
-    }
-
     pub fn students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
         &self.assigned[project]
     }

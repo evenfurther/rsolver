@@ -52,6 +52,15 @@ impl<'a> Hungarian<'a> {
         self.weights[&(student, project)]
     }
 
+    /// Return the some of weights of students registered on a project.
+    fn total_weight_for(&self, project: ProjectId) -> isize {
+        self.assignments
+            .students_for(project)
+            .into_iter()
+            .map(|&s| self.weight_of(s, project))
+            .sum::<isize>()
+    }
+
     /// Check that there are enough seats for all students.
     fn check_number_of_seats(&self) -> Result<(), Error> {
         let seats = self
@@ -118,7 +127,7 @@ impl<'a> Hungarian<'a> {
         incomplete.sort_by_key(|&p| {
             (
                 self.assignments.open_spots_for(p)[0],
-                self.assignments.ranks_sum_of(p),
+                self.total_weight_for(p),
             )
         });
         for p in incomplete {
@@ -150,7 +159,7 @@ impl<'a> Hungarian<'a> {
                 .min_by_key(|&p| {
                     (
                         self.assignments.open_spots_for(p)[0],
-                        self.assignments.ranks_sum_of(p),
+                        self.total_weight_for(p),
                     )
                 }) {
                 debug!(
@@ -203,9 +212,9 @@ impl<'a> Hungarian<'a> {
                     .iter()
                     .filter(|&s| self.assignments.is_pinned_and_has_chosen(*s, p))
                     .count() as isize;
-                let ranks = self.assignments.ranks_sum_of(p);
+                let weight = self.total_weight_for(p);
                 let missing = self.assignments.open_spots_for(p)[0];
-                (self.assignments.max_occurrences(p), -pinned, missing, ranks)
+                (self.assignments.max_occurrences(p), -pinned, missing, weight)
             })
     }
 }
