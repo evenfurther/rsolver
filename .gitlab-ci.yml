@@ -1,14 +1,20 @@
-image: rfc1149/rose-dev
+image: rust
+
+stages:
+  - lint
+  - test
 
 cache:
-  key: "$CI_BUILD_NAME"
+  key: "$CI_JOB_NAME"
   paths:
-    - /root/.cargo
+    - /usr/local/rustup
+  untracked: true
 
 .test_template: &cargo_test
   stage: test
-  script:
+  before_script:
     - rustup install $RUST
+  script:
     - cargo +$RUST test
 
 stable:
@@ -25,4 +31,12 @@ nightly:
   <<: *cargo_test
   variables:
     RUST: nightly
-  allow_failure: true
+
+nightly_fmt:
+  <<: *cargo_test
+  stage: lint
+  variables:
+    RUST: nightly
+  script:
+    - rustup component add --toolchain $RUST rustfmt-preview
+    - cargo +$RUST fmt --all -- --check
