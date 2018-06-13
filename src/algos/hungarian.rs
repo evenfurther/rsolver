@@ -3,6 +3,7 @@ use failure::Error;
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
+use std::iter;
 use types::*;
 
 pub struct Hungarian<'a> {
@@ -21,9 +22,7 @@ impl<'a> Hungarian<'a> {
         for p in &self.assignments.projects {
             let n = p.max_students * self.assignments.max_occurrences(p.id);
             seats_for.insert(p.id, (seats.len()..seats.len() + n).collect::<Vec<_>>());
-            for _ in 0..n {
-                seats.push(p.id);
-            }
+            seats.extend(iter::repeat(p.id).take(n));
         }
         let large = isize::MAX / (1 + slen);
         let mut prefs = Matrix::new(self.assignments.students.len(), seats.len(), large);
