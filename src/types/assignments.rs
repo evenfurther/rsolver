@@ -75,6 +75,10 @@ impl Assignments {
             .collect()
     }
 
+    pub fn all_students(&self) -> Vec<StudentId> {
+        (0..self.students.len()).map(StudentId).collect()
+    }
+
     pub fn rankings(&self, student: StudentId) -> &Vec<ProjectId> {
         &self.student(student).rankings
     }
@@ -206,19 +210,18 @@ impl Assignments {
 
     pub fn cancel(&mut self, project: ProjectId) {
         assert!(!self.is_cancelled(project), "project is cancelled already");
-        assert!(
-            self.assigned[project.0].is_empty(),
-            "cancelled project is assigned to some students"
-        );
         self.max_occurrences[project.0] = 0;
+        assert!(
+            !self.is_over_capacity(project),
+            "cancelled project is assign to some students"
+        );
     }
 
     pub fn cancel_occurrence(&mut self, project: ProjectId) {
         assert!(!self.is_cancelled(project), "project is cancelled already");
         self.max_occurrences[project.0] -= 1;
         assert!(
-            self.students_for(project).len()
-                <= self.max_occurrences[project.0] * self.project(project).max_students,
+            !self.is_over_capacity(project),
             "cancelled occurrence still has to too many students assigned"
         );
     }
@@ -243,14 +246,20 @@ impl Assignments {
         self.project(project).min_students
     }
 
+    pub fn max_students(&self, project: ProjectId) -> usize {
+        self.project(project).max_students
+    }
+
+    pub fn max_capacity(&self, project: ProjectId) -> usize {
+        self.max_students(project) * self.max_occurrences(project)
+    }
+
     pub fn is_at_capacity(&self, project: ProjectId) -> bool {
-        let p = self.project(project);
-        self.size(project) == p.max_students * self.max_occurrences[project.0]
+        self.size(project) == self.max_capacity(project)
     }
 
     pub fn is_over_capacity(&self, project: ProjectId) -> bool {
-        let p = self.project(project);
-        self.size(project) > p.max_students * self.max_occurrences[project.0]
+        self.size(project) > self.max_capacity(project)
     }
 
     pub fn is_under_capacity(&self, project: ProjectId) -> bool {
@@ -261,30 +270,17 @@ impl Assignments {
         self.min_students(project) - self.size(project)
     }
 
-    pub fn acceptable(&self, project: ProjectId) -> bool {
+    pub fn is_acceptable_for(&self, project: ProjectId, n: usize) -> bool {
         assert!(
             !self.is_cancelled(project),
             "a cancelled project cannot be acceptable"
         );
-        let s = self.project(project).acceptable(
-            self.max_occurrences[project.0],
-            self.students_for(project).len(),
-        );
-        if !s && self.open_spots_for(project).is_empty() {
-            debug!("acceptable {:?}, {:?}", s, self.open_spots_for(project));
-            let p = self.project(project);
-            println!(
-                "project min = {}, max = {}, max_occ = {}, occ = {}",
-                p.min_students, p.max_students, p.max_occurrences, self.max_occurrences[project.0]
-            );
-            println!("students = {}", self.students_for(project).len());
-            println!(
-                "can_host = {:?}",
-                p.can_host(self.max_occurrences[project.0])
-            );
-            println!("open_spots = {:?}", self.open_spots_for(project));
-        }
-        s
+        self.project(project)
+            .acceptable(self.max_occurrences(project), n)
+    }
+
+    pub fn is_acceptable(&self, project: ProjectId) -> bool {
+        self.is_acceptable_for(project, self.students_for(project).len())
     }
 
     pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
@@ -294,7 +290,7 @@ impl Assignments {
         );
         let students = self.students_for(project).len();
         self.project(project)
-            .can_host(self.max_occurrences[project.0])
+            .can_host(self.max_occurrences(project))
             .into_iter()
             .filter_map(|n| {
                 if n > students {
