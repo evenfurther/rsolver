@@ -130,9 +130,9 @@ fn main() {
         .version(crate_version!())
         .args_from_usage(
             "
-          -c,--config=[FILE] 'use FILE file instead of rsolver.ini'
-          -n,--dry-run       'do not write back results to database'
-          -v...              'set verbosity level'",
+          -c,--config=[FILE] 'Use FILE file instead of rsolver.ini'
+          -n,--dry-run       'Do not write back results to database'
+          -v...              'Set verbosity level'",
         )
         .get_matches();
     let level = match matches.occurrences_of("v") {
