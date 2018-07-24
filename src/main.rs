@@ -131,6 +131,7 @@ fn main() {
         .args_from_usage(
             "
           -c,--config=[FILE] 'use FILE file instead of rsolver.ini'
+          -n,--dry-run       'do not write back results to database'
           -v...              'set verbosity level'",
         )
         .get_matches();
@@ -145,14 +146,14 @@ fn main() {
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
     if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))
-        .and_then(|conf| run(&conf))
+        .and_then(|conf| run(&conf, matches.is_present("dry_run")))
     {
         let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
         std::process::exit(1);
     }
 }
 
-fn run(config: &Config) -> Result<(), Error> {
+fn run(config: &Config, dry_run: bool) -> Result<(), Error> {
     let mut loader =
         match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
             "mysql" => MysqlLoader::new(config)?,
@@ -169,7 +170,9 @@ fn run(config: &Config) -> Result<(), Error> {
         };
         algo.assign()?;
     }
-    loader.save(&assignments)?;
+    if !dry_run {
+        loader.save(&assignments)?;
+    }
     display_details(&assignments);
     display_stats(&assignments);
     display_empty(&assignments);
