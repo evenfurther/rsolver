@@ -214,7 +214,12 @@ impl<'a> Hungarian<'a> {
                     .count() as isize;
                 let weight = self.total_weight_for(p);
                 let missing = self.assignments.open_spots_for(p)[0];
-                (self.assignments.max_occurrences(p), -pinned, missing, weight)
+                (
+                    self.assignments.max_occurrences(p),
+                    -pinned,
+                    missing,
+                    weight,
+                )
             })
     }
 }
