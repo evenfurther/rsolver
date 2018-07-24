@@ -6,9 +6,9 @@ authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 [dependencies]
 clap = "2.24"
 failure = "0.1.1"
-flexi_logger = "0.8"
+flexi_logger = "0.9"
 log = "0.4"
-mysql = "13.1.0"
+mysql = "14.0"
 pathfinding = "0.8"
 rand = "0.5.1"
 rust-ini = "0.12.1"
