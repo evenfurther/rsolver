@@ -17,7 +17,6 @@ use failure::*;
 use ini::Ini;
 use loaders::*;
 use stats::*;
-use std::io::Write;
 use types::*;
 
 mod algos;
@@ -123,7 +122,7 @@ pub fn get_config(config: &Config, section: &str, key: &str) -> Option<String> {
         .cloned()
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
     let matches = App::new("rsolver")
         .about("Automatically assign projects to students")
         .author(crate_authors!("\n"))
@@ -145,23 +144,16 @@ fn main() {
     flexi_logger::Logger::with_str(format!("rsolver={}", level))
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
-    if let Err(e) = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))
-        .and_then(|conf| run(&conf, matches.is_present("dry_run")))
-    {
-        let _ = writeln!(&mut std::io::stderr(), "Error: {:#?}", e);
-        std::process::exit(1);
-    }
-}
-
-fn run(config: &Config, dry_run: bool) -> Result<(), Error> {
+    let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
+    let dry_run = matches.is_present("dry_run");
     let mut loader =
-        match &get_config(config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => MysqlLoader::new(config)?,
+        match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
+            "mysql" => MysqlLoader::new(&config)?,
             other => bail!("unknown loader: {}", other),
         };
     let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
     {
-        let mut algo: Box<Algo> = match &get_config(config, "solver", "algorithm")
+        let mut algo: Box<Algo> = match &get_config(&config, "solver", "algorithm")
             .unwrap_or_else(|| "ordering".to_owned())[..]
         {
             "ordering" => Box::new(Ordering::new(&mut assignments)),
