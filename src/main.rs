@@ -154,7 +154,7 @@ fn main() -> Result<(), Error> {
     let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
     {
         let mut algo: Box<Algo> = match &get_config(&config, "solver", "algorithm")
-            .unwrap_or_else(|| "ordering".to_owned())[..]
+            .unwrap_or_else(|| "hungarian".to_owned())[..]
         {
             "ordering" => Box::new(Ordering::new(&mut assignments)),
             "hungarian" => Box::new(Hungarian::new(&mut assignments)),
