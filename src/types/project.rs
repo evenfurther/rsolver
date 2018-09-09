@@ -14,11 +14,11 @@ impl Project {
     pub fn can_host(&self, occ: usize) -> Vec<usize> {
         assert!(occ <= self.max_occurrences);
         if occ == 1 || self.min_students * 2 <= self.max_students {
-            (self.min_students..self.max_students * occ + 1).collect()
+            (self.min_students..=self.max_students * occ).collect()
         } else {
             let mut r = Vec::new();
-            for occurrence in 1..occ + 1 {
-                for students in self.min_students * occurrence..self.max_students * occurrence + 1 {
+            for occurrence in 1..=occ {
+                for students in self.min_students * occurrence..=self.max_students * occurrence {
                     r.push(students);
                 }
             }
@@ -28,7 +28,7 @@ impl Project {
 
     pub fn acceptable(&self, occ: usize, n: usize) -> bool {
         assert!(occ <= self.max_occurrences);
-        (1..occ + 1).any(|occ| n >= occ * self.min_students && n <= occ * self.max_students)
+        (1..=occ).any(|occ| n >= occ * self.min_students && n <= occ * self.max_students)
     }
 }
 
