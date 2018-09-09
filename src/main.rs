@@ -132,8 +132,7 @@ fn main() -> Result<(), Error> {
           -c,--config=[FILE] 'Use FILE file instead of rsolver.ini'
           -n,--dry-run       'Do not write back results to database'
           -v...              'Set verbosity level'",
-        )
-        .get_matches();
+        ).get_matches();
     let level = match matches.occurrences_of("v") {
         0 => "error",
         1 => "warn",
