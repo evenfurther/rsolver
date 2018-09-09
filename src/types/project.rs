@@ -52,6 +52,10 @@ fn test_acceptable() {
         ..p
     };
     assert_eq!(
+        (1..20).filter(|n| p.acceptable(1, *n)).collect::<Vec<_>>(),
+        vec![5, 6]
+    );
+    assert_eq!(
         (1..20).filter(|n| p.acceptable(2, *n)).collect::<Vec<_>>(),
         vec![5, 6, 10, 11, 12]
     );
