@@ -134,7 +134,8 @@ impl Loader for MysqlLoader {
             stmt.execute(params!{
                 "id" => self.students[s.id.0].id.0,
                 "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
-            }).context("cannot save attributions")?;
+            })
+            .context("cannot save attributions")?;
         }
         Ok(())
     }

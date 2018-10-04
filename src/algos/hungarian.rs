@@ -153,7 +153,8 @@ impl<'a> Hungarian<'a> {
                     self.assignments.is_open(p) && self
                         .assignments
                         .is_acceptable_for(p, self.assignments.size(p) + 1)
-                }).into_iter()
+                })
+                .into_iter()
                 .min_by_key(|&p| {
                     (
                         self.assignments.open_spots_for(p)[0],
@@ -181,7 +182,8 @@ impl<'a> Hungarian<'a> {
                 .assignments
                 .filter_projects(|p| {
                     !self.assignments.is_cancelled(p) && !self.assignments.is_open(p)
-                }).into_iter()
+                })
+                .into_iter()
                 .min_by_key(|&p| self.assignments.project(p).min_students)
                 .unwrap();
             for _ in 0..unassigned
@@ -201,7 +203,8 @@ impl<'a> Hungarian<'a> {
                 !self.assignments.is_cancelled(p)
                     && self.assignments.is_open(p)
                     && !self.assignments.is_acceptable(p)
-            }).into_iter()
+            })
+            .into_iter()
             .max_by_key(|&p| {
                 let students = self.assignments.students_for(p);
                 let pinned = students

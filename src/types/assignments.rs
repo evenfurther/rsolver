@@ -32,8 +32,10 @@ impl Assignments {
                         } else {
                             None
                         }
-                    }).collect()
-            }).collect();
+                    })
+                    .collect()
+            })
+            .collect();
         let max_occurrences = projects.iter().map(|p| p.max_occurrences).collect();
         Assignments {
             students,
@@ -69,7 +71,8 @@ impl Assignments {
                 } else {
                     None
                 }
-            }).collect()
+            })
+            .collect()
     }
 
     pub fn all_students(&self) -> Vec<StudentId> {
@@ -190,7 +193,8 @@ impl Assignments {
                 } else {
                     None
                 }
-            }).collect()
+            })
+            .collect()
     }
 
     pub fn cancel(&mut self, project: ProjectId) {
@@ -283,6 +287,7 @@ impl Assignments {
                 } else {
                     None
                 }
-            }).collect()
+            })
+            .collect()
     }
 }
