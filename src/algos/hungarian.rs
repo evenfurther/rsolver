@@ -1,10 +1,10 @@
 use super::Algo;
+use crate::types::*;
 use failure::Error;
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
 use std::iter;
-use types::*;
 
 pub struct Hungarian<'a> {
     assignments: &'a mut Assignments,
@@ -150,9 +150,10 @@ impl<'a> Hungarian<'a> {
             if let Some(p) = self
                 .assignments
                 .filter_projects(|p| {
-                    self.assignments.is_open(p) && self
-                        .assignments
-                        .is_acceptable_for(p, self.assignments.size(p) + 1)
+                    self.assignments.is_open(p)
+                        && self
+                            .assignments
+                            .is_acceptable_for(p, self.assignments.size(p) + 1)
                 })
                 .into_iter()
                 .min_by_key(|&p| {

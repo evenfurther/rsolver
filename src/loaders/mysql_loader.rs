@@ -1,10 +1,10 @@
 use super::loader::Loader;
+use crate::get_config;
+use crate::types::*;
+use crate::Config;
 use failure::{Error, ResultExt};
-use get_config;
 use mysql as my;
 use std::collections::HashMap;
-use types::*;
-use Config;
 
 pub struct MysqlLoader {
     pool: my::Pool,

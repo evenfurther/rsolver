@@ -1,9 +1,9 @@
 use super::Algo;
+use crate::types::*;
 use failure::Error;
 use log::Level::Info;
 use rand::rngs::ThreadRng;
 use rand::{self, Rng};
-use types::*;
 
 pub struct Ordering<'a> {
     assignments: &'a mut Assignments,

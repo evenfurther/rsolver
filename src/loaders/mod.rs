@@ -1,5 +1,5 @@
+use crate::types::*;
 use std::collections::HashMap;
-use types::*;
 
 pub use self::loader::Loader;
 pub use self::mysql_loader::MysqlLoader;

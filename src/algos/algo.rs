@@ -1,5 +1,5 @@
+use crate::types::Assignments;
 use failure::Error;
-use types::Assignments;
 
 pub trait Algo {
     fn assign(&mut self) -> Result<(), Error>;
