@@ -56,7 +56,7 @@ impl<'a> Hungarian<'a> {
     fn total_weight_for(&self, project: ProjectId) -> isize {
         self.assignments
             .students_for(project)
-            .into_iter()
+            .iter()
             .map(|&s| self.weight_of(s, project))
             .sum::<isize>()
     }
