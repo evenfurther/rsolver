@@ -61,23 +61,6 @@ impl<'a> Hungarian<'a> {
             .sum::<isize>()
     }
 
-    /// Check that there are enough seats for all students.
-    fn check_number_of_seats(&self) -> Result<(), Error> {
-        let seats = self
-            .assignments
-            .all_projects()
-            .into_iter()
-            .map(|p| self.assignments.max_capacity(p))
-            .sum::<usize>();
-        ensure!(
-            seats >= self.assignments.students.len(),
-            "insufficient number of open projects, can host {} students out of {}",
-            seats,
-            self.assignments.students.len()
-        );
-        Ok(())
-    }
-
     /// Assign every student to a project. There must be enough seats for every
     /// student or this function will panic.
     fn hungarian_algorithm(&mut self) {
@@ -104,17 +87,6 @@ impl<'a> Hungarian<'a> {
         let (_, results) = kuhn_munkres_min(&prefs);
         for (s, seat) in results.into_iter().enumerate() {
             self.assignments.assign_to(StudentId(s), seats[seat]);
-        }
-    }
-
-    /// Unassign all students who have no ranking from their assigned
-    /// project.
-    fn unassign_non_voting_students(&mut self) {
-        for s in self.assignments.all_students() {
-            let p = self.assignments.project_for(s).unwrap();
-            if self.assignments.rank_of(s, p).is_none() {
-                self.assignments.unassign(s);
-            }
         }
     }
 
@@ -227,7 +199,7 @@ impl<'a> Hungarian<'a> {
 impl<'a> Algo for Hungarian<'a> {
     fn assign(&mut self) -> Result<(), Error> {
         // Check that we have enough open positions for all our students.
-        self.check_number_of_seats()?;
+        self.assignments.check_number_of_seats()?;
 
         // Run the Hungarian algorithm to assign every students to the best
         // possible project (school-wise).
@@ -235,7 +207,7 @@ impl<'a> Algo for Hungarian<'a> {
 
         // Remove non-voting students for now as they will be used to
         // adjust project attendance.
-        self.unassign_non_voting_students();
+        self.assignments.unassign_non_voting_students();
 
         // As long as we have incomplete non-empty projects, complete them with unassigned
         // students, starting with the less-incomplete projects and with the smallest

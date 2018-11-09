@@ -1,4 +1,5 @@
 use super::*;
+use failure::Error;
 use std::collections::HashMap;
 
 const PINNING_BONUS: isize = 1000;
@@ -289,5 +290,32 @@ impl Assignments {
                 }
             })
             .collect()
+    }
+
+    /// Check that there are enough seats for all students.
+    pub fn check_number_of_seats(&self) -> Result<(), Error> {
+        let seats = self
+            .all_projects()
+            .into_iter()
+            .map(|p| self.max_capacity(p))
+            .sum::<usize>();
+        ensure!(
+            seats >= self.students.len(),
+            "insufficient number of open projects, can host {} students out of {}",
+            seats,
+            self.students.len()
+        );
+        Ok(())
+    }
+
+    /// Unassign all students who have no ranking from their assigned
+    /// project.
+    pub fn unassign_non_voting_students(&mut self) {
+        for s in self.all_students() {
+            let p = self.project_for(s).unwrap();
+            if self.rank_of(s, p).is_none() {
+                self.unassign(s);
+            }
+        }
     }
 }
