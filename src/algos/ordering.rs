@@ -2,8 +2,7 @@ use super::Algo;
 use crate::types::*;
 use failure::Error;
 use log::Level::Info;
-use rand::rngs::ThreadRng;
-use rand::{self, Rng};
+use rand::prelude::*;
 
 pub struct Ordering<'a> {
     assignments: &'a mut Assignments,
@@ -14,7 +13,7 @@ impl<'a> Ordering<'a> {
     pub fn new(assignments: &'a mut Assignments) -> Ordering<'a> {
         Ordering {
             assignments,
-            rng: rand::thread_rng(),
+            rng: thread_rng(),
         }
     }
 
@@ -53,7 +52,7 @@ impl<'a> Ordering<'a> {
             .cloned()
             .collect::<Vec<_>>();
         info!("Potential students to move: {}", overflowing_students.len());
-        self.rng.shuffle(&mut overflowing_students);
+        overflowing_students.shuffle(&mut self.rng);
         for student in overflowing_students {
             if let Some(project) = self.assignments.project_for(student) {
                 if self.assignments.is_over_capacity(project) {
@@ -82,7 +81,7 @@ impl<'a> Ordering<'a> {
             )
         });
         let mut students = self.assignments.unassigned_students();
-        self.rng.shuffle(&mut students);
+        students.shuffle(&mut self.rng);
         info!(
             "Completing {} projects under minimum capacity with {} unassigned students",
             projects.len(),
