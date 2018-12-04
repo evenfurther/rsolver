@@ -2,14 +2,10 @@
 extern crate clap;
 #[macro_use]
 extern crate failure;
-extern crate flexi_logger;
-extern crate ini;
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate mysql;
-extern crate pathfinding;
-extern crate rand;
 
 use crate::algos::*;
 use crate::loaders::*;
@@ -17,6 +13,7 @@ use crate::stats::*;
 use crate::types::*;
 use clap::App;
 use failure::*;
+use flexi_logger;
 use ini::Ini;
 
 mod algos;
@@ -153,7 +150,7 @@ fn main() -> Result<(), Error> {
         };
     let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
     {
-        let mut algo: Box<Algo> = match &get_config(&config, "solver", "algorithm")
+        let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
             .unwrap_or_else(|| "hungarian".to_owned())[..]
         {
             "ordering" => Box::new(Ordering::new(&mut assignments)),
