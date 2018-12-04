@@ -11,11 +11,11 @@ extern crate mysql;
 extern crate pathfinding;
 extern crate rand;
 
-use clap::App;
 use crate::algos::*;
 use crate::loaders::*;
 use crate::stats::*;
 use crate::types::*;
+use clap::App;
 use failure::*;
 use ini::Ini;
 

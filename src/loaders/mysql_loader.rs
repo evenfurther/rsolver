@@ -131,7 +131,7 @@ impl Loader for MysqlLoader {
             .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
             .context("cannot prepare statement")?;
         for s in &assignments.students {
-            stmt.execute(params!{
+            stmt.execute(params! {
                 "id" => self.students[s.id.0].id.0,
                 "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
             })

@@ -133,7 +133,8 @@ impl<'a> Hungarian<'a> {
                         self.assignments.open_spots_for(p)[0],
                         self.total_weight_for(p),
                     )
-                }) {
+                })
+            {
                 debug!(
                     "Assigning {} to non-full project {}",
                     self.assignments.student(s).name,
