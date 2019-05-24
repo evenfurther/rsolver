@@ -1,5 +1,5 @@
 use super::Algo;
-use crate::types::*;
+use crate::model::*;
 use failure::Error;
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;

@@ -1,4 +1,4 @@
-use crate::types::Assignments;
+use crate::model::Assignments;
 use failure::Error;
 
 pub trait Algo {

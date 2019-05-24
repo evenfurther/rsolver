@@ -9,8 +9,8 @@ extern crate mysql;
 
 use crate::algos::*;
 use crate::loaders::*;
+use crate::model::*;
 use crate::stats::*;
-use crate::types::*;
 use clap::App;
 use failure::*;
 use flexi_logger;
@@ -18,8 +18,8 @@ use ini::Ini;
 
 mod algos;
 mod loaders;
+mod model;
 mod stats;
-mod types;
 
 fn display_details(a: &Assignments) {
     let mut projects = a.projects.clone();

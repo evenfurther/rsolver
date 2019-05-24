@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::model::*;
 use std::collections::HashMap;
 
 pub use self::loader::Loader;

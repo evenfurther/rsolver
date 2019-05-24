@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::model::*;
 
 pub fn statistics(a: &Assignments) -> Vec<usize> {
     let mut ranks = vec![0; a.projects.len()];

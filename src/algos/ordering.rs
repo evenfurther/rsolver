@@ -1,5 +1,5 @@
 use super::Algo;
-use crate::types::*;
+use crate::model::*;
 use failure::Error;
 use log::Level::Info;
 use rand::prelude::*;

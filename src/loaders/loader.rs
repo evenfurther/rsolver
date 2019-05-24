@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::model::*;
 use failure::Error;
 
 pub trait Loader {

@@ -1,6 +1,6 @@
 use super::loader::Loader;
 use crate::get_config;
-use crate::types::*;
+use crate::model::*;
 use crate::Config;
 use failure::{Error, ResultExt};
 use mysql as my;
