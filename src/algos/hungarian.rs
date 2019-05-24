@@ -152,19 +152,23 @@ impl<'a> Hungarian<'a> {
     fn open_new_projects_as_needed(&mut self) {
         let mut unassigned = self.assignments.unassigned_students();
         while !unassigned.is_empty() {
-            let p = self
+            match self
                 .assignments
                 .filter_projects(|p| {
                     !self.assignments.is_cancelled(p) && !self.assignments.is_open(p)
                 })
                 .into_iter()
                 .min_by_key(|&p| self.assignments.project(p).min_students)
-                .unwrap();
-            for _ in 0..unassigned
-                .len()
-                .min(self.assignments.project(p).min_students)
             {
-                self.assignments.assign_to(unassigned.pop().unwrap(), p);
+                Some(p) => {
+                    for _ in 0..unassigned
+                        .len()
+                        .min(self.assignments.project(p).min_students)
+                    {
+                        self.assignments.assign_to(unassigned.pop().unwrap(), p);
+                    }
+                }
+                None => break,
             }
         }
     }
@@ -223,6 +227,9 @@ impl<'a> Algo for Hungarian<'a> {
         // If we still have unassigned students, open a new project, preferring projects
         // with the smallest required number of students.
         self.open_new_projects_as_needed();
+
+        // If some students are still unassigned, try to fill up newly opened projects.
+        self.complete_non_full_projects();
 
         // If we have projects which are not satisfied, remove one occurrence
         // (preferably in projects with many occurrences) and start again.
