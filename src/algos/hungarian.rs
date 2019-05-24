@@ -105,7 +105,7 @@ impl<'a> Hungarian<'a> {
         for p in incomplete {
             for _ in 0..self.assignments.open_spots_for(p)[0].min(unassigned.len()) {
                 let s = unassigned.pop().unwrap();
-                debug!(
+                trace!(
                     "Assigning {} to incomplete project {}",
                     self.assignments.student(s).name,
                     self.assignments.project(p).name
@@ -135,7 +135,7 @@ impl<'a> Hungarian<'a> {
                     )
                 })
             {
-                debug!(
+                trace!(
                     "Assigning {} to non-full project {}",
                     self.assignments.student(s).name,
                     self.assignments.project(p).name
@@ -161,6 +161,11 @@ impl<'a> Hungarian<'a> {
                 .min_by_key(|&p| self.assignments.project(p).min_students)
             {
                 Some(p) => {
+                    trace!(
+                        "Opening new project {} for {} students",
+                        self.assignments.project(p).name,
+                        self.assignments.project(p).min_students
+                    );
                     for _ in 0..unassigned
                         .len()
                         .min(self.assignments.project(p).min_students)
@@ -168,7 +173,13 @@ impl<'a> Hungarian<'a> {
                         self.assignments.assign_to(unassigned.pop().unwrap(), p);
                     }
                 }
-                None => break,
+                None => {
+                    debug!(
+                        "Cannot find new project to open for {} unassigned students",
+                        unassigned.len()
+                    );
+                    break;
+                }
             }
         }
     }
