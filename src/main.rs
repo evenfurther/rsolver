@@ -166,5 +166,8 @@ fn main() -> Result<(), Error> {
     display_stats(&assignments);
     display_empty(&assignments);
     check_pinned_consistency(&assignments);
-    Ok(())
+    match assignments.unassigned_students().len() {
+        0 => Ok(()),
+        n => bail!("{} students could not get assigned to any project", n),
+    }
 }
