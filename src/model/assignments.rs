@@ -1,5 +1,5 @@
 use super::*;
-use failure::Error;
+use failure::{ensure, Error};
 use std::collections::HashMap;
 
 const PINNING_BONUS: isize = 1000;

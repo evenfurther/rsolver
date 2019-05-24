@@ -1,18 +1,12 @@
 #[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate failure;
-#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate mysql;
 
 use crate::algos::*;
 use crate::loaders::*;
 use crate::model::*;
 use crate::stats::*;
-use clap::App;
-use failure::*;
+use clap::{crate_authors, crate_version, App};
+use failure::{bail, ensure, Error, ResultExt};
 use flexi_logger;
 use ini::Ini;
 
@@ -166,8 +160,10 @@ fn main() -> Result<(), Error> {
     display_stats(&assignments);
     display_empty(&assignments);
     check_pinned_consistency(&assignments);
-    match assignments.unassigned_students().len() {
-        0 => Ok(()),
-        n => bail!("{} students could not get assigned to any project", n),
-    }
+    ensure!(
+        assignments.unassigned_students().is_empty(),
+        "{} students could not get assigned to any project",
+        assignments.unassigned_students().len()
+    );
+    Ok(())
 }
