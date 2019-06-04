@@ -40,7 +40,9 @@ impl SqliteLoader {
             projects: Vec::new(),
         })
     }
+}
 
+impl Loader for SqliteLoader {
     load!(
         load_projects,
         "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
@@ -91,30 +93,13 @@ impl SqliteLoader {
             row.get::<_, i32>(2)? as isize,
         )
     );
-}
 
-impl Loader for SqliteLoader {
-    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
-        self.projects = self.load_projects().context("cannot load projects")?;
-        self.students = self.load_students().context("cannot load students")?;
-        let preferences = self.load_preferences().context("cannot load rankings")?;
-        let bonuses = self.load_bonuses().context("cannot load bonuses")?;
-        for student in &mut self.students {
-            let mut preferences = preferences
-                .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
-                .collect::<Vec<_>>();
-            preferences.sort_by_key(|&(_, w)| w);
-            student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
-            student.bonuses = bonuses
-                .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
-                .collect();
-        }
-        let mut students = self.students.clone();
-        let mut projects = self.projects.clone();
-        super::remap(&mut students, &mut projects);
-        Ok((students, projects))
+    fn store_projects(&mut self, projects: &[Project]) {
+        self.projects = projects.to_vec();
+    }
+
+    fn store_students(&mut self, students: &[Student]) {
+        self.students = students.to_vec();
     }
 
     fn save(&self, assignments: &Assignments) -> Result<(), Error> {

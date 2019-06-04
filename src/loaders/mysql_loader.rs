@@ -15,8 +15,8 @@ pub struct MysqlLoader {
 
 macro_rules! load {
     ($name:ident, $query:expr, $ty:ty, $pattern:pat, $value:expr) => {
-        fn $name(&self) -> my::Result<Vec<$ty>> {
-            self.pool.prep_exec($query, ()).and_then(|result| {
+        fn $name(&self) -> Result<Vec<$ty>, Error> {
+            Ok(self.pool.prep_exec($query, ()).and_then(|result| {
                 result
                     .map(|row| {
                         row.map(|row| {
@@ -24,8 +24,8 @@ macro_rules! load {
                             $value
                         })
                     })
-                .collect()
-            })
+                .collect::<Result<Vec<_>, _>>()
+            })?)
         }
     };
 }
@@ -57,7 +57,9 @@ impl MysqlLoader {
                 projects: Vec::new(),
             })?)
     }
+}
 
+impl Loader for MysqlLoader {
     load!(
         load_projects,
         "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
@@ -100,30 +102,13 @@ impl MysqlLoader {
         (student_id, project_id, weight),
         (StudentId(student_id), ProjectId(project_id), weight)
     );
-}
 
-impl Loader for MysqlLoader {
-    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
-        self.projects = self.load_projects().context("cannot load projects")?;
-        self.students = self.load_students().context("cannot load students")?;
-        let preferences = self.load_preferences().context("cannot load rankings")?;
-        let bonuses = self.load_bonuses().context("cannot load bonuses")?;
-        for student in &mut self.students {
-            let mut preferences = preferences
-                .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, w)) } else { None })
-                .collect::<Vec<_>>();
-            preferences.sort_by_key(|&(_, w)| w);
-            student.rankings = preferences.into_iter().map(|(p, _)| p).collect();
-            student.bonuses = bonuses
-                .iter()
-                .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
-                .collect();
-        }
-        let mut students = self.students.clone();
-        let mut projects = self.projects.clone();
-        super::remap(&mut students, &mut projects);
-        Ok((students, projects))
+    fn store_projects(&mut self, projects: &[Project]) {
+        self.projects = projects.to_vec();
+    }
+
+    fn store_students(&mut self, students: &[Student]) {
+        self.students = students.to_vec();
     }
 
     fn save(&self, assignments: &Assignments) -> Result<(), Error> {
