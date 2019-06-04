@@ -14,6 +14,22 @@ pub struct SqliteLoader {
     projects: Vec<Project>,
 }
 
+macro_rules! load {
+    ($name:ident, $query:expr, $ty:ty, $row:ident, $value:expr) => {
+        fn $name(&self) -> Result<Vec<$ty>, Error> {
+        let mut stmt = self
+            .conn
+            .prepare($query)?;
+        let result = stmt
+            .query_map(NO_PARAMS, |$row| {
+                Ok($value)
+            })?
+            .collect::<Result<Vec<_>, _>>();
+        Ok(result?)
+        }
+    }
+}
+
 impl SqliteLoader {
     pub fn new(config: &Config) -> Result<SqliteLoader, Error> {
         let filename = get_config(config, "sqlite", "file")
@@ -25,72 +41,56 @@ impl SqliteLoader {
         })
     }
 
-    pub fn load_projects(&self) -> Result<Vec<Project>, rusqlite::Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")?;
-        let result = stmt
-            .query_map(NO_PARAMS, |row| {
-                Ok(Project {
-                    id: ProjectId(row.get::<_, u32>(0)? as usize),
-                    name: row.get(1)?,
-                    min_students: row.get::<_, u32>(2)? as usize,
-                    max_students: row.get::<_, u32>(3)? as usize,
-                    max_occurrences: row.get::<_, u32>(4)? as usize,
-                })
-            })?
-            .collect();
-        result
-    }
+    load!(
+        load_projects,
+        "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+        Project,
+        row,
+        Project {
+            id: ProjectId(row.get::<_, u32>(0)? as usize),
+            name: row.get(1)?,
+            min_students: row.get::<_, u32>(2)? as usize,
+            max_students: row.get::<_, u32>(3)? as usize,
+            max_occurrences: row.get::<_, u32>(4)? as usize,
+        }
+    );
 
-    pub fn load_students(&self) -> Result<Vec<Student>, rusqlite::Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, prenom || ' ' || nom FROM eleves")?;
-        let result = stmt
-            .query_map(NO_PARAMS, |row| {
-                Ok(Student {
-                    id: StudentId(row.get::<_, u32>(0)? as usize),
-                    name: row.get(1)?,
-                    rankings: Vec::new(),
-                    bonuses: HashMap::new(),
-                })
-            })?
-            .collect();
-        result
-    }
+    load!(
+        load_students,
+        "SELECT id, prenom || ' ' || nom FROM eleves",
+        Student,
+        row,
+        Student {
+            id: StudentId(row.get::<_, u32>(0)? as usize),
+            name: row.get(1)?,
+            rankings: Vec::new(),
+            bonuses: HashMap::new(),
+        }
+    );
 
-    pub fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, isize)>, rusqlite::Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT eleve_id, projet_id, poids FROM pref_override")?;
-        let result = stmt
-            .query_map(NO_PARAMS, |row| {
-                Ok((
-                    StudentId(row.get::<_, u32>(0)? as usize),
-                    ProjectId(row.get::<_, u32>(1)? as usize),
-                    row.get::<_, i32>(2)? as isize,
-                ))
-            })?
-            .collect();
-        result
-    }
+    load!(
+        load_bonuses,
+        "SELECT eleve_id, projet_id, poids FROM pref_override",
+        (StudentId, ProjectId, isize),
+        row,
+        (
+            StudentId(row.get::<_, u32>(0)? as usize),
+            ProjectId(row.get::<_, u32>(1)? as usize),
+            row.get::<_, i32>(2)? as isize,
+        )
+    );
 
-    pub fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, isize)>, rusqlite::Error> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT eleve_id, projet_id, poids FROM preferences")?;
-        let result = stmt
-            .query_map(NO_PARAMS, |row| {
-                Ok((
-                    StudentId(row.get::<_, u32>(0)? as usize),
-                    ProjectId(row.get::<_, u32>(1)? as usize),
-                    row.get::<_, i32>(2)? as isize,
-                ))
-            })?
-            .collect();
-        result
-    }
+    load!(
+        load_preferences,
+        "SELECT eleve_id, projet_id, poids FROM preferences",
+        (StudentId, ProjectId, isize),
+        row,
+        (
+            StudentId(row.get::<_, u32>(0)? as usize),
+            ProjectId(row.get::<_, u32>(1)? as usize),
+            row.get::<_, i32>(2)? as isize,
+        )
+    );
 }
 
 impl Loader for SqliteLoader {
