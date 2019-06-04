@@ -137,9 +137,11 @@ fn main() -> Result<(), Error> {
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
     let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
     let dry_run = matches.is_present("dry_run");
-    let mut loader =
+    let mut loader: Box<dyn Loader> =
         match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => MysqlLoader::new(&config)?,
+            "mysql" => Box::new(MysqlLoader::new(&config)?),
+            #[cfg(feature = "sqlite")]
+            "sqlite" => Box::new(SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
     let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
