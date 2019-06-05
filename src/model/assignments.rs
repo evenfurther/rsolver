@@ -120,9 +120,11 @@ impl Assignments {
     }
 
     pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
-        self.bonuses(student)
-            .get(&project)
-            .map_or(false, |b| *b >= PINNING_BONUS)
+        self.rank_of(student, project) == Some(0)
+            && self
+                .bonuses(student)
+                .get(&project)
+                .map_or(false, |b| *b >= PINNING_BONUS)
     }
 
     pub fn is_pinned_and_has_chosen(&self, student: StudentId, project: ProjectId) -> bool {
