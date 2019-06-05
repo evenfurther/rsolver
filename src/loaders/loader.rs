@@ -44,6 +44,12 @@ pub trait Loader {
                 .iter()
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
+            if !student.bonuses.is_empty() {
+                trace!("{} has been assigned the following bonuses:", student.name);
+                for (p, w) in &student.bonuses {
+                    trace!("  - {}: {}", projects[p.0].name, w);
+                }
+            }
         }
         Ok((students, projects))
     }
