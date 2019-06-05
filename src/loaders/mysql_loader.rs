@@ -111,15 +111,15 @@ impl Loader for MysqlLoader {
         self.students = students.to_vec();
     }
 
-    fn save(&self, assignments: &Assignments) -> Result<(), Error> {
+    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error> {
         let mut stmt = self
             .pool
             .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
             .context("cannot prepare statement")?;
-        for s in &assignments.students {
+        for (s, p) in assignments {
             stmt.execute(params! {
-                "id" => self.students[s.id.0].id.0,
-                "attribution" => self.projects[assignments.project_for(s.id).unwrap().0].id.0
+                "id" => s.0,
+                "attribution" => p.0,
             })
             .context("cannot save attributions")?;
         }

@@ -102,15 +102,12 @@ impl Loader for SqliteLoader {
         self.students = students.to_vec();
     }
 
-    fn save(&self, assignments: &Assignments) -> Result<(), Error> {
-        for s in &assignments.students {
+    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error> {
+        for (s, p) in assignments {
             self.conn
                 .execute(
                     "UPDATE eleves SET attribution=?1 WHERE id=?2",
-                    &[
-                        self.projects[assignments.project_for(s.id).unwrap().0].id.0 as u32,
-                        self.students[s.id.0].id.0 as u32,
-                    ],
+                    &[p.0 as u32, s.0 as u32],
                 )
                 .context("cannot save attributions")?;
         }

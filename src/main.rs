@@ -9,6 +9,7 @@ use clap::{crate_authors, crate_version, App};
 use failure::{bail, ensure, Error, ResultExt};
 use flexi_logger;
 use ini::Ini;
+use std::collections::HashMap;
 
 mod algos;
 mod loaders;
@@ -144,7 +145,11 @@ fn main() -> Result<(), Error> {
             "sqlite" => Box::new(SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
-    let mut assignments = loader.load().map(|(s, p)| Assignments::new(s, p))?;
+    let (original_students, original_projects) = loader.load()?;
+    let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
+    // Work with normalized values (students and projets starting at 0 and without gaps)
+    remap(&mut students, &mut projects);
+    let mut assignments = Assignments::new(students, projects);
     {
         let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
             .unwrap_or_else(|| "hungarian".to_owned())[..]
@@ -156,7 +161,17 @@ fn main() -> Result<(), Error> {
         algo.assign()?;
     }
     if !dry_run {
-        loader.save(&assignments)?;
+        let assignments = assignments
+            .students
+            .iter()
+            .map(|s| {
+                (
+                    original_students[s.id.0].id,
+                    original_projects[assignments.project_for(s.id).unwrap().0].id,
+                )
+            })
+            .collect::<Vec<_>>();
+        loader.save_assignments(&assignments)?
     }
     display_details(&assignments);
     display_stats(&assignments);
@@ -168,4 +183,37 @@ fn main() -> Result<(), Error> {
         assignments.unassigned_students().len()
     );
     Ok(())
+}
+
+fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {
+    let map: HashMap<ProjectId, ProjectId> = projects
+        .iter()
+        .zip(0..)
+        .map(|(p, n)| (p.id, ProjectId(n)))
+        .collect();
+    for project in projects.iter_mut() {
+        project.id = map[&project.id];
+    }
+    map
+}
+
+fn remap_students(students: &mut Vec<Student>) {
+    for (idx, student) in students.iter_mut().enumerate() {
+        student.id = StudentId(idx);
+    }
+}
+
+fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
+    remap_students(students);
+    let map = remap_projects(projects);
+    for student in students {
+        for id in &mut student.rankings {
+            *id = map[&*id];
+        }
+        student.bonuses = student
+            .bonuses
+            .iter()
+            .map(|(&k, &v)| (map[&k], v))
+            .collect();
+    }
 }

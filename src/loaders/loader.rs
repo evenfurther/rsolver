@@ -27,7 +27,7 @@ pub trait Loader {
     }
 
     fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
-        let mut projects = self.load_projects().context("cannot load projects")?;
+        let projects = self.load_projects().context("cannot load projects")?;
         self.store_projects(&projects.clone());
         let mut students = self.load_students().context("cannot load students")?;
         self.store_students(&students.clone());
@@ -45,9 +45,8 @@ pub trait Loader {
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
         }
-        super::remap(&mut students, &mut projects);
         Ok((students, projects))
     }
 
-    fn save(&self, assignments: &Assignments) -> Result<(), Error>;
+    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error>;
 }
