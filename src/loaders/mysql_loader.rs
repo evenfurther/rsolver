@@ -110,7 +110,11 @@ impl Loader for MysqlLoader {
         self.students = students.to_vec();
     }
 
-    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error> {
+    fn save_assignments(
+        &self,
+        assignments: &[(StudentId, ProjectId)],
+        unassigned: &[StudentId],
+    ) -> Result<(), Error> {
         let mut stmt = self
             .pool
             .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
@@ -121,6 +125,14 @@ impl Loader for MysqlLoader {
                 "attribution" => p.0,
             })
             .context("cannot save attributions")?;
+        }
+        let mut stmt = self
+            .pool
+            .prepare("UPDATE eleves SET attribution=NULL WHERE id=:id")
+            .context("cannot prepare statement")?;
+        for s in unassigned {
+            stmt.execute(params! { "id" => s.0 })
+                .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())
     }

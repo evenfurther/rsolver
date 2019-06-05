@@ -101,7 +101,11 @@ impl Loader for SqliteLoader {
         self.students = students.to_vec();
     }
 
-    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error> {
+    fn save_assignments(
+        &self,
+        assignments: &[(StudentId, ProjectId)],
+        unassigned: &[StudentId],
+    ) -> Result<(), Error> {
         for (s, p) in assignments {
             self.conn
                 .execute(
@@ -109,6 +113,14 @@ impl Loader for SqliteLoader {
                     &[p.0 as u32, s.0 as u32],
                 )
                 .context("cannot save attributions")?;
+        }
+        for s in unassigned {
+            self.conn
+                .execute(
+                    "UPDATE eleves SET attribution=NULL WHERE id=?1",
+                    &[s.0 as u32],
+                )
+                .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())
     }

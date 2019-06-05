@@ -54,5 +54,9 @@ pub trait Loader {
         Ok((students, projects))
     }
 
-    fn save_assignments(&self, assignments: &[(StudentId, ProjectId)]) -> Result<(), Error>;
+    fn save_assignments(
+        &self,
+        assignments: &[(StudentId, ProjectId)],
+        unassigned: &[StudentId],
+    ) -> Result<(), Error>;
 }

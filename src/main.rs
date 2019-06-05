@@ -161,9 +161,11 @@ fn main() -> Result<(), Error> {
         algo.assign()?;
     }
     if !dry_run {
+        let unassigned_students = assignments.unassigned_students();
         let assignments = assignments
             .students
             .iter()
+            .filter(|s| !unassigned_students.contains(&s.id))
             .map(|s| {
                 (
                     original_students[s.id.0].id,
@@ -171,7 +173,7 @@ fn main() -> Result<(), Error> {
                 )
             })
             .collect::<Vec<_>>();
-        loader.save_assignments(&assignments)?
+        loader.save_assignments(&assignments, &unassigned_students)?
     }
     display_details(&assignments);
     display_stats(&assignments);
