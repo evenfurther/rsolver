@@ -1,6 +1,7 @@
 use super::Algo;
 use crate::model::*;
-use failure::Error;
+use crate::{get_config, Config};
+use failure::{Error, ResultExt};
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
@@ -12,16 +13,24 @@ pub struct Hungarian<'a> {
 }
 
 impl<'a> Hungarian<'a> {
-    pub fn new(assignments: &'a mut Assignments) -> Hungarian<'a> {
-        let weights = Self::compute_weights(assignments);
-        Hungarian {
+    pub fn new(assignments: &'a mut Assignments, config: &Config) -> Result<Hungarian<'a>, Error> {
+        let rank_mult = get_config(config, "hungarian", "rank_mult")
+            .unwrap_or_else(|| "3".to_owned())
+            .parse::<isize>()
+            .context("cannot parse hungarian.rank_mult configuration parameter")?;
+        let rank_pow = get_config(config, "hungarian", "rank_pow")
+            .unwrap_or_else(|| "4".to_owned())
+            .parse::<u32>()
+            .context("cannot parse hungarian.rank_pow configuration parameter")?;
+        let weights = Self::compute_weights(assignments, rank_mult, rank_pow);
+        Ok(Hungarian {
             assignments,
             weights,
-        }
+        })
     }
 
     /// Compute the weights indexed by student then by project (less is better).
-    fn compute_weights(a: &Assignments) -> Matrix<isize> {
+    fn compute_weights(a: &Assignments, rank_mult: isize, rank_pow: u32) -> Matrix<isize> {
         let slen = a.students.len() as isize;
         let mut seats = Vec::new();
         let mut seats_for = HashMap::new();
@@ -39,7 +48,7 @@ impl<'a> Hungarian<'a> {
                     weights[&(s.id.0, p.id.0)] = if rank == 0 && a.is_pinned_for(s.id, p.id) {
                         -large
                     } else {
-                        (rank as isize * 3).pow(4) - a.bonus(s.id, p.id).unwrap_or(0)
+                        (rank as isize * rank_mult).pow(rank_pow) - a.bonus(s.id, p.id).unwrap_or(0)
                     };
                 }
             }

@@ -155,7 +155,7 @@ fn main() -> Result<(), Error> {
             .unwrap_or_else(|| "hungarian".to_owned())[..]
         {
             "ordering" => Box::new(Ordering::new(&mut assignments)),
-            "hungarian" => Box::new(Hungarian::new(&mut assignments)),
+            "hungarian" => Box::new(Hungarian::new(&mut assignments, &config)?),
             other => bail!("unknown algorithm: {}", other),
         };
         algo.assign()?;
