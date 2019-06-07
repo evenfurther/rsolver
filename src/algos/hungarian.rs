@@ -45,7 +45,7 @@ impl<'a> Hungarian<'a> {
         for s in &a.students {
             for p in &a.projects {
                 if let Some(rank) = a.rank_of(s.id, p.id) {
-                    weights[&(s.id.0, p.id.0)] = if rank == 0 && a.is_pinned_for(s.id, p.id) {
+                    weights[&(s.id.0, p.id.0)] = if a.is_pinned_and_has_chosen(s.id, p.id) {
                         -large
                     } else {
                         (rank as isize * rank_mult).pow(rank_pow) - a.bonus(s.id, p.id).unwrap_or(0)
@@ -138,15 +138,9 @@ impl<'a> Hungarian<'a> {
                 })
                 .into_iter()
                 .min_by_key(|&p| {
-                    let lazy = self
-                        .assignments
-                        .students_for(p)
-                        .iter()
-                        .filter(|&&s| self.assignments.rankings(s).is_empty())
-                        .count();
                     assert_eq!(self.assignments.open_spots_for(p)[0], 1);
                     (
-                        lazy,
+                        self.assignments.lazy_students_count_for(p),
                         -(self.assignments.open_spots_for(p).last().cloned().unwrap() as isize),
                         self.total_weight_for(p),
                     )
@@ -156,7 +150,7 @@ impl<'a> Hungarian<'a> {
                     "Assigning {} to non-full project {} with {} lazy students and {} open spots max",
                     self.assignments.student(s).name,
                     self.assignments.project(p).name,
-                    self.assignments.students_for(p).iter().filter(|&&s| self.assignments.rankings(s).is_empty()).count(),
+                    self.assignments.lazy_students_count_for(p),
                     self.assignments.open_spots_for(p).last().unwrap(),
                 );
                 self.assignments.assign_to(s, p);
@@ -226,9 +220,7 @@ impl<'a> Hungarian<'a> {
                     .get(0)
                     .cloned()
                     .unwrap_or(0);
-                let all_lazy = students
-                    .iter()
-                    .all(|&s| self.assignments.rankings(s).is_empty());
+                let all_lazy = students.iter().all(|&s| self.assignments.is_lazy(s));
                 (
                     all_lazy,
                     self.assignments.max_occurrences(p),
@@ -289,16 +281,11 @@ impl<'a> Algo for Hungarian<'a> {
         // occurrence having only lazy students to force another larger project to open.
         if !self.assignments.unassigned_students().is_empty() {
             if let Some(to_cancel) = self.find_occurrence_to_cancel(true) {
-                let students = self.assignments.students_for(to_cancel);
-                let lazy = students
-                    .iter()
-                    .filter(|&&s| self.assignments.rankings(s).is_empty())
-                    .count();
                 info!(
                 "Cancelling occurrence of project {} containing {} lazy students out of {} students, remaining occurrences: {}",
                 self.assignments.project(to_cancel).name,
-                lazy,
-                students.len(),
+                self.assignments.lazy_students_count_for(to_cancel),
+                self.assignments.students_for(to_cancel).len(),
                 self.assignments.max_occurrences(to_cancel) - 1,
             );
                 self.assignments.clear_all_assignments();

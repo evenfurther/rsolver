@@ -16,4 +16,8 @@ impl Student {
     pub fn rank_of(&self, project: ProjectId) -> Option<usize> {
         self.rankings.iter().position(|&p| p == project)
     }
+
+    pub fn is_lazy(&self) -> bool {
+        self.rankings.is_empty()
+    }
 }

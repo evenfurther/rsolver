@@ -108,6 +108,13 @@ impl Assignments {
         &self.assigned[project]
     }
 
+    pub fn lazy_students_count_for(&self, project: ProjectId) -> usize {
+        self.students_for(project)
+            .iter()
+            .filter(|&&s| self.is_lazy(s))
+            .count()
+    }
+
     pub fn pinned_students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
         &self.pinned[project]
     }
@@ -135,6 +142,10 @@ impl Assignments {
         } else {
             false
         }
+    }
+
+    pub fn is_lazy(&self, StudentId(student): StudentId) -> bool {
+        self.students[student].is_lazy()
     }
 
     pub fn assign_to(&mut self, student: StudentId, project: ProjectId) {
