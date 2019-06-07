@@ -94,6 +94,20 @@ fn check_pinned_consistency(a: &Assignments) {
     }
 }
 
+fn ensure_acceptable(a: &Assignments) -> Result<(), Error> {
+    if let Some(unacceptable) = a
+        .all_projects()
+        .iter()
+        .find(|&&p| a.is_open(p) && !a.is_acceptable(p))
+    {
+        bail!(
+            "project {} has an unacceptable number of students",
+            a.project(*unacceptable).name
+        );
+    }
+    Ok(())
+}
+
 pub struct Config {
     conf: Ini,
 }
@@ -184,7 +198,7 @@ fn main() -> Result<(), Error> {
         "{} students could not get assigned to any project",
         assignments.unassigned_students().len()
     );
-    Ok(())
+    ensure_acceptable(&assignments)
 }
 
 fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {
