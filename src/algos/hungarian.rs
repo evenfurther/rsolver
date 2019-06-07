@@ -138,16 +138,26 @@ impl<'a> Hungarian<'a> {
                 })
                 .into_iter()
                 .min_by_key(|&p| {
+                    let lazy = self
+                        .assignments
+                        .students_for(p)
+                        .iter()
+                        .filter(|&&s| self.assignments.rankings(s).is_empty())
+                        .count();
+                    assert_eq!(self.assignments.open_spots_for(p)[0], 1);
                     (
-                        self.assignments.open_spots_for(p)[0],
+                        lazy,
+                        -(self.assignments.open_spots_for(p).last().cloned().unwrap() as isize),
                         self.total_weight_for(p),
                     )
                 })
             {
                 trace!(
-                    "Assigning {} to non-full project {}",
+                    "Assigning {} to non-full project {} with {} lazy students and {} open spots max",
                     self.assignments.student(s).name,
-                    self.assignments.project(p).name
+                    self.assignments.project(p).name,
+                    self.assignments.students_for(p).iter().filter(|&&s| self.assignments.rankings(s).is_empty()).count(),
+                    self.assignments.open_spots_for(p).last().unwrap(),
                 );
                 self.assignments.assign_to(s, p);
             } else {

@@ -29,7 +29,7 @@ fn display_details(a: &Assignments) {
                 if let Some(rank) = a.rank_of(s, p.id) {
                     print!(" (rank {})", rank + 1);
                 }
-                if a.is_pinned_for(s, p.id) {
+                if a.is_pinned_and_has_chosen(s, p.id) {
                     print!(" (pinned)");
                 }
                 println!();
