@@ -137,6 +137,7 @@ fn main() -> Result<(), Error> {
             "
           -c,--config=[FILE]  Use FILE file instead of rsolver.ini
           -n,--dry-run        Do not write back results to database
+          -r,--rename-lazy    Rename lazy student into Zzz + order
           -v...               Set verbosity level",
         )
         .get_matches();
@@ -189,6 +190,10 @@ fn main() -> Result<(), Error> {
             .collect::<Vec<_>>();
         loader.save_assignments(&assignments, &unassigned_students)?
     }
+    // Rename lazy students if requested, to ease output comparison
+    if matches.is_present("rename-lazy") {
+        rename_lazy_students(&mut assignments);
+    }
     display_details(&assignments);
     display_stats(&assignments);
     display_empty(&assignments);
@@ -199,6 +204,14 @@ fn main() -> Result<(), Error> {
         assignments.unassigned_students().len()
     );
     ensure_acceptable(&assignments)
+}
+
+fn rename_lazy_students(assignments: &mut Assignments) {
+    for p in assignments.filter_projects(|p| assignments.is_open(p)) {
+        for (n, s) in assignments.lazy_students_for(p).into_iter().enumerate() {
+            assignments.rename_student(s, format!("Zzz {}", n + 1));
+        }
+    }
 }
 
 fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {

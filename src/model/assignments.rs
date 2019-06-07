@@ -52,6 +52,10 @@ impl Assignments {
         &self.students[student]
     }
 
+    pub fn rename_student(&mut self, StudentId(student): StudentId, name: String) {
+        self.students[student].name = name;
+    }
+
     pub fn project(&self, ProjectId(project): ProjectId) -> &Project {
         &self.projects[project]
     }
@@ -106,6 +110,14 @@ impl Assignments {
 
     pub fn students_for(&self, ProjectId(project): ProjectId) -> &Vec<StudentId> {
         &self.assigned[project]
+    }
+
+    pub fn lazy_students_for(&self, project: ProjectId) -> Vec<StudentId> {
+        self.students_for(project)
+            .iter()
+            .filter(|&&s| self.is_lazy(s))
+            .cloned()
+            .collect()
     }
 
     pub fn lazy_students_count_for(&self, project: ProjectId) -> usize {
