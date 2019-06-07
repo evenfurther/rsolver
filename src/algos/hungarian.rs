@@ -1,7 +1,7 @@
 use super::Algo;
 use crate::model::*;
 use crate::{get_config, Config};
-use failure::{Error, ResultExt};
+use failure::{bail, Error, ResultExt};
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
@@ -167,6 +167,7 @@ impl<'a> Hungarian<'a> {
                     !self.assignments.is_cancelled(p) && !self.assignments.is_open(p)
                 })
                 .into_iter()
+                .filter(|&p| self.assignments.min_students(p) <= unassigned.len())
                 .min_by_key(|&p| self.assignments.project(p).min_students)
             {
                 Some(p) => {
@@ -194,13 +195,12 @@ impl<'a> Hungarian<'a> {
     }
 
     /// If it exists, find one of the best unacceptable project occurrence
-    /// to cancel.
-    fn find_occurrence_to_cancel(&self) -> Option<ProjectId> {
+    /// to cancel. Or even an acceptable one if including_acceptable is true.
+    fn find_occurrence_to_cancel(&self, including_acceptable: bool) -> Option<ProjectId> {
         self.assignments
             .filter_projects(|p| {
-                !self.assignments.is_cancelled(p)
-                    && self.assignments.is_open(p)
-                    && !self.assignments.is_acceptable(p)
+                self.assignments.is_open(p)
+                    && (including_acceptable || !self.assignments.is_acceptable(p))
             })
             .into_iter()
             .max_by_key(|&p| {
@@ -210,8 +210,17 @@ impl<'a> Hungarian<'a> {
                     .filter(|&s| self.assignments.is_pinned_and_has_chosen(*s, p))
                     .count() as isize;
                 let weight = self.total_weight_for(p);
-                let missing = self.assignments.open_spots_for(p)[0];
+                let missing = self
+                    .assignments
+                    .open_spots_for(p)
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(0);
+                let all_lazy = students
+                    .iter()
+                    .all(|&s| self.assignments.rankings(s).is_empty());
                 (
+                    all_lazy,
                     self.assignments.max_occurrences(p),
                     -pinned,
                     missing,
@@ -239,32 +248,60 @@ impl<'a> Algo for Hungarian<'a> {
         // rank sum.
         self.complete_incomplete_projects();
 
+        // If we have projects which are not satisfied, remove one occurrence
+        // (preferably in projects with many occurrences) and start again.
+        // The number of pinned students also decreases the probability of removing
+        // the project.
+        if let Some(to_cancel) = self.find_occurrence_to_cancel(false) {
+            info!(
+                "Cancelling occurrence of project {}, remaining occurrences: {}",
+                self.assignments.project(to_cancel).name,
+                self.assignments.max_occurrences(to_cancel) - 1,
+            );
+            self.assignments.clear_all_assignments();
+            self.assignments.cancel_occurrence(to_cancel);
+            return self.assign();
+        }
+
         // As long as we have non-full projects, complete them with unassigned students
         // starting with projects lacking the smallest number of students and with the
         // smaller rank sum.
         self.complete_non_full_projects();
 
-        // If we still have unassigned students, open a new project, preferring projects
+        // If we still have unassigned students, open new projects, preferring projects
         // with the smallest required number of students.
         self.open_new_projects_as_needed();
 
         // If some students are still unassigned, try to fill up newly opened projects.
         self.complete_non_full_projects();
 
-        // If we have projects which are not satisfied, remove one occurrence
-        // (preferably in projects with many occurrences) and start again.
-        // The number of pinned students also decreases the probability of removing
-        // the project.
-        if let Some(to_cancel) = self.find_occurrence_to_cancel() {
-            self.assignments.clear_all_assignments();
-            self.assignments.cancel_occurrence(to_cancel);
-            info!(
-                "Cancelling occurrence of project {}, remaining occurrences: {}",
+        // If at this stage some students still cannot be assigned, cancel the smallest
+        // occurrence having only lazy students to force another larger project to open.
+        if !self.assignments.unassigned_students().is_empty() {
+            if let Some(to_cancel) = self.find_occurrence_to_cancel(true) {
+                let students = self.assignments.students_for(to_cancel);
+                let lazy = students
+                    .iter()
+                    .filter(|&&s| self.assignments.rankings(s).is_empty())
+                    .count();
+                info!(
+                "Cancelling occurrence of project {} containing {} lazy students out of {} students, remaining occurrences: {}",
                 self.assignments.project(to_cancel).name,
-                self.assignments.max_occurrences(to_cancel),
+                lazy,
+                students.len(),
+                self.assignments.max_occurrences(to_cancel) - 1,
             );
-            return self.assign();
+                self.assignments.clear_all_assignments();
+                self.assignments.cancel_occurrence(to_cancel);
+                return self.assign();
+            } else {
+                bail!(
+                    "unable to assign a project to {} students",
+                    self.assignments.unassigned_students().len()
+                );
+            }
         }
+
         Ok(())
     }
 
