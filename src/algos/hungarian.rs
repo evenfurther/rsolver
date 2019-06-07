@@ -112,7 +112,19 @@ impl<'a> Hungarian<'a> {
             )
         });
         for p in incomplete {
-            for _ in 0..self.assignments.open_spots_for(p)[0].min(unassigned.len()) {
+            if unassigned.is_empty() {
+                return;
+            }
+            let missing = self.assignments.open_spots_for(p)[0];
+            if missing > unassigned.len() {
+                debug!(
+                    "Not enough students ({}) to complete more incomplete projects ({} necessary)",
+                    unassigned.len(),
+                    missing
+                );
+                return;
+            }
+            for _ in 0..missing {
                 let s = unassigned.pop().unwrap();
                 trace!(
                     "Assigning {} to incomplete project {}",
