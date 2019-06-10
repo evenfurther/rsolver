@@ -16,16 +16,31 @@ mod loaders;
 mod model;
 mod stats;
 
-fn display_details(a: &Assignments) {
+fn display_details(a: &Assignments, rename_lazy: bool) {
     let mut projects = a.projects.clone();
     projects.sort_by_key(|ref p| p.name.clone());
     for p in &projects {
-        let mut students = a.students_for(p.id).clone();
-        students.sort_by_key(|&s| a.student(s).name.clone());
+        let mut lazy_index = 0;
+        let mut students = a
+            .students_for(p.id)
+            .iter()
+            .map(|&s| {
+                (
+                    if rename_lazy && a.student(s).is_lazy() {
+                        lazy_index += 1;
+                        format!("Zzz {}", lazy_index)
+                    } else {
+                        a.student(s).name.clone()
+                    },
+                    s,
+                )
+            })
+            .collect::<Vec<_>>();
+        students.sort_by_key(|(name, _)| name.clone());
         if !students.is_empty() {
             println!("{}:", p.name);
-            for s in students {
-                print!("  - {}", a.student(s).name);
+            for (name, s) in students {
+                print!("  - {}", name);
                 if let Some(rank) = a.rank_of(s, p.id) {
                     print!(" (rank {})", rank + 1);
                 }
@@ -191,10 +206,7 @@ fn main() -> Result<(), Error> {
         loader.save_assignments(&assignments, &unassigned_students)?
     }
     // Rename lazy students if requested, to ease output comparison
-    if matches.is_present("rename-lazy") {
-        rename_lazy_students(&mut assignments);
-    }
-    display_details(&assignments);
+    display_details(&assignments, matches.is_present("rename-lazy"));
     display_stats(&assignments);
     display_empty(&assignments);
     check_pinned_consistency(&assignments);
@@ -204,14 +216,6 @@ fn main() -> Result<(), Error> {
         assignments.unassigned_students().len()
     );
     ensure_acceptable(&assignments)
-}
-
-fn rename_lazy_students(assignments: &mut Assignments) {
-    for p in assignments.filter_projects(|p| assignments.is_open(p)) {
-        for (n, s) in assignments.lazy_students_for(p).into_iter().enumerate() {
-            assignments.rename_student(s, format!("Zzz {}", n + 1));
-        }
-    }
 }
 
 fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {

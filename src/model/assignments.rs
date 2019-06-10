@@ -52,10 +52,6 @@ impl Assignments {
         &self.students[student]
     }
 
-    pub fn rename_student(&mut self, StudentId(student): StudentId, name: String) {
-        self.students[student].name = name;
-    }
-
     pub fn project(&self, ProjectId(project): ProjectId) -> &Project {
         &self.projects[project]
     }
