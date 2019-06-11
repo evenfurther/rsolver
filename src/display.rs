@@ -106,7 +106,7 @@ pub fn display_with_many_lazy(a: &Assignments) {
         .collect::<Vec<_>>();
     if !projects.is_empty() {
         println!(
-            "Projects with at least half the members being unregistered students (lazy/total):"
+            "Projects with at least half the members being unregistered students (unregistered/total):"
         );
         for (p, regular, lazy) in projects {
             println!("  - {} ({}/{})", a.project(p).name, lazy, lazy + regular);

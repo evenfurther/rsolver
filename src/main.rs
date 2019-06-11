@@ -44,11 +44,11 @@ fn main() -> Result<(), Error> {
         .version(crate_version!())
         .args_from_usage(
             "
-          -c,--config=[FILE]  'Use FILE file instead of rsolver.ini'
-          -d,--drop-lazy      'Do not assign lazy students to any project'
-          -n,--dry-run        'Do not write back results to database'
-          -r,--rename-lazy    'Rename lazy student into Zzz + order'
-          -v...               'Set verbosity level'",
+          -c,--config=[FILE]        'Use FILE file instead of rsolver.ini'
+          -d,--drop-unregistered    'Do not assign unregistered students to any project'
+          -n,--dry-run              'Do not write back results to database'
+          -r,--rename-unregistered  'Rename lazy student into Zzz + order'
+          -v...                     'Set verbosity level'",
         )
         .get_matches();
     let level = match matches.occurrences_of("v") {
@@ -73,7 +73,7 @@ fn main() -> Result<(), Error> {
     // Load data from the database
     let (original_students, original_projects) = loader.load()?;
     // Isolate lazy students before remapping if asked to do so
-    let (original_students, lazy_students) = if matches.is_present("drop-lazy") {
+    let (original_students, lazy_students) = if matches.is_present("drop-unregistered") {
         remap::separate_lazy(original_students)
     } else {
         (original_students, vec![])
@@ -113,7 +113,7 @@ fn main() -> Result<(), Error> {
         loader.save_assignments(&assignments, &unassigned_students)?
     }
     // Rename lazy students if requested, to ease output comparison
-    display::display_details(&assignments, matches.is_present("rename-lazy"));
+    display::display_details(&assignments, matches.is_present("rename-unregistered"));
     display::display_stats(&assignments, lazy_students.len());
     display::display_empty(&assignments);
     display::display_with_many_lazy(&assignments);
