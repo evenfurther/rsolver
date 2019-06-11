@@ -2,145 +2,39 @@
 extern crate log;
 
 use crate::algos::*;
+use crate::config::{get_config, Config};
 use crate::loaders::*;
 use crate::model::*;
-use crate::stats::*;
 use clap::{crate_authors, crate_version, App};
-use failure::{bail, ensure, Error, ResultExt};
+use failure::{bail, ensure, Error};
 use flexi_logger;
-use ini::Ini;
-use std::collections::HashMap;
 
 mod algos;
+mod checks;
+mod config;
+mod display;
 mod loaders;
 mod model;
+mod remap;
 mod stats;
 
-fn display_details(a: &Assignments, rename_lazy: bool) {
-    let mut projects = a.projects.clone();
-    projects.sort_by_key(|ref p| p.name.clone());
-    for p in &projects {
-        let mut lazy_index = 0;
-        let mut students = a
-            .students_for(p.id)
-            .iter()
-            .map(|&s| {
-                (
-                    if rename_lazy && a.student(s).is_lazy() {
-                        lazy_index += 1;
-                        format!("Zzz {}", lazy_index)
-                    } else {
-                        a.student(s).name.clone()
-                    },
-                    s,
-                )
-            })
-            .collect::<Vec<_>>();
-        students.sort_by_key(|(name, _)| name.clone());
-        if !students.is_empty() {
-            println!("{}:", p.name);
-            for (name, s) in students {
-                print!("  - {}", name);
-                if let Some(rank) = a.rank_of(s, p.id) {
-                    print!(" (rank {})", rank + 1);
-                }
-                if a.is_pinned_and_has_chosen(s, p.id) {
-                    print!(" (pinned)");
-                }
-                println!();
-            }
-            println!();
-        }
-    }
-}
-
-fn display_stats(a: &Assignments) {
-    let students = a.students.len();
-    let lazy = (0..students)
-        .filter(|&s| a.rankings(StudentId(s)).is_empty())
-        .count();
-    println!(
-        "Students registered/unregistered/total: {}/{}/{}",
-        students - lazy,
-        lazy,
-        students
-    );
-    let ranks = statistics(a);
-    let cumul = ranks.iter().scan(0, |s, &r| {
-        *s += r;
-        Some(*s)
-    });
-    let total: usize = ranks.iter().sum();
-    println!("Final ranking:");
-    for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
-        if *n != 0 {
-            println!(
-                "  - rank {}: {} (cumulative {} - {:.2}%)",
-                rank + 1,
-                n,
-                c,
-                100.0 * c as f32 / total as f32
-            );
-        }
-    }
-}
-
-fn display_empty(a: &Assignments) {
-    let projects = a.filter_projects(|p| !a.is_open(p));
-    if !projects.is_empty() {
-        println!("Empty projects:");
-        for p in projects {
-            println!("  - {}", a.project(p).name);
-        }
-    }
-}
-
-fn check_pinned_consistency(a: &Assignments) {
-    for s in &a.students {
-        if let Some(p) = a.rankings(s.id).get(0) {
-            if a.is_pinned_for(s.id, *p) && a.project_for(s.id) != Some(*p) {
-                warn!(
-                    "WARNING: student {} did not get pinned project {}",
-                    s.name,
-                    a.project(*p).name
-                );
-            }
-        }
-    }
-}
-
-fn ensure_acceptable(a: &Assignments) -> Result<(), Error> {
-    if let Some(unacceptable) = a
-        .all_projects()
-        .iter()
-        .find(|&&p| a.is_open(p) && !a.is_acceptable(p))
+fn assign(
+    students: Vec<Student>,
+    projects: Vec<Project>,
+    config: &Config,
+) -> Result<Assignments, Error> {
+    let mut assignments = Assignments::new(students, projects);
     {
-        bail!(
-            "project {} has an unacceptable number of students",
-            a.project(*unacceptable).name
-        );
+        let mut algo: Box<dyn Algo> = match &get_config(config, "solver", "algorithm")
+            .unwrap_or_else(|| "hungarian".to_owned())[..]
+        {
+            "ordering" => Box::new(Ordering::new(&mut assignments)),
+            "hungarian" => Box::new(Hungarian::new(&mut assignments, config)?),
+            other => bail!("unknown algorithm: {}", other),
+        };
+        algo.assign()?;
     }
-    Ok(())
-}
-
-pub struct Config {
-    conf: Ini,
-}
-
-impl Config {
-    fn load(file_name: &str) -> Result<Config, Error> {
-        Ok(Config {
-            conf: Ini::load_from_file(file_name).context("cannot load configuration file")?,
-        })
-    }
-}
-
-pub fn get_config(config: &Config, section: &str, key: &str) -> Option<String> {
-    config
-        .conf
-        .section(Some(section.to_owned()))
-        .and_then(|s| s.get(key))
-        .cloned()
+    Ok(assignments)
 }
 
 fn main() -> Result<(), Error> {
@@ -180,16 +74,7 @@ fn main() -> Result<(), Error> {
     let (original_students, original_projects) = loader.load()?;
     // Isolate lazy students before remapping if asked to do so
     let (original_students, lazy_students) = if matches.is_present("drop-lazy") {
-        let mut students = Vec::new();
-        let mut lazy_students = Vec::new();
-        for student in original_students.into_iter() {
-            if student.rankings.is_empty() {
-                lazy_students.push(student.id);
-            } else {
-                students.push(student);
-            }
-        }
-        (students, lazy_students)
+        remap::separate_lazy(original_students)
     } else {
         (original_students, vec![])
     };
@@ -197,24 +82,11 @@ fn main() -> Result<(), Error> {
     let (students, projects) = {
         let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
         // Work with normalized values (students and projets starting at 0 and without gaps)
-        remap(&mut students, &mut projects);
+        remap::remap(&mut students, &mut projects);
         (students, projects)
     };
     // Compute the new assignments
-    let assignments = {
-        let mut assignments = Assignments::new(students, projects);
-        {
-            let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
-                .unwrap_or_else(|| "hungarian".to_owned())[..]
-            {
-                "ordering" => Box::new(Ordering::new(&mut assignments)),
-                "hungarian" => Box::new(Hungarian::new(&mut assignments, &config)?),
-                other => bail!("unknown algorithm: {}", other),
-            };
-            algo.assign()?;
-        }
-        assignments
-    };
+    let assignments = assign(students, projects, &config)?;
     if !dry_run {
         // Make a list of unassigned students, be it from the algorithm
         // or because lazy students were singled out beforehand
@@ -241,47 +113,14 @@ fn main() -> Result<(), Error> {
         loader.save_assignments(&assignments, &unassigned_students)?
     }
     // Rename lazy students if requested, to ease output comparison
-    display_details(&assignments, matches.is_present("rename-lazy"));
-    display_stats(&assignments);
-    display_empty(&assignments);
-    check_pinned_consistency(&assignments);
+    display::display_details(&assignments, matches.is_present("rename-lazy"));
+    display::display_stats(&assignments);
+    display::display_empty(&assignments);
+    checks::check_pinned_consistency(&assignments);
     ensure!(
         assignments.unassigned_students().is_empty(),
         "{} students could not get assigned to any project",
         assignments.unassigned_students().len()
     );
-    ensure_acceptable(&assignments)
-}
-
-fn remap_projects(projects: &mut Vec<Project>) -> HashMap<ProjectId, ProjectId> {
-    let map: HashMap<ProjectId, ProjectId> = projects
-        .iter()
-        .zip(0..)
-        .map(|(p, n)| (p.id, ProjectId(n)))
-        .collect();
-    for project in projects.iter_mut() {
-        project.id = map[&project.id];
-    }
-    map
-}
-
-fn remap_students(students: &mut Vec<Student>) {
-    for (idx, student) in students.iter_mut().enumerate() {
-        student.id = StudentId(idx);
-    }
-}
-
-fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
-    remap_students(students);
-    let map = remap_projects(projects);
-    for student in students {
-        for id in &mut student.rankings {
-            *id = map[&*id];
-        }
-        student.bonuses = student
-            .bonuses
-            .iter()
-            .map(|(&k, &v)| (map[&k], v))
-            .collect();
-    }
+    checks::ensure_acceptable(&assignments)
 }
