@@ -150,10 +150,10 @@ fn main() -> Result<(), Error> {
         .version(crate_version!())
         .args_from_usage(
             "
-          -c,--config=[FILE]  Use FILE file instead of rsolver.ini
-          -n,--dry-run        Do not write back results to database
-          -r,--rename-lazy    Rename lazy student into Zzz + order
-          -v...               Set verbosity level",
+          -c,--config=[FILE]  'Use FILE file instead of rsolver.ini'
+          -n,--dry-run        'Do not write back results to database'
+          -r,--rename-lazy    'Rename lazy student into Zzz + order'
+          -v...               'Set verbosity level'",
         )
         .get_matches();
     let level = match matches.occurrences_of("v") {
