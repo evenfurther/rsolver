@@ -194,7 +194,11 @@ fn main() -> Result<(), Error> {
         algo.assign()?;
     }
     if !dry_run {
-        let unassigned_students = assignments.unassigned_students();
+        let unassigned_students = assignments
+            .unassigned_students()
+            .iter()
+            .map(|s| original_students[s.0].id)
+            .collect::<Vec<_>>();
         let assignments = assignments
             .students
             .iter()
