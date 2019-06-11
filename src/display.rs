@@ -39,16 +39,26 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
     }
 }
 
-pub fn display_stats(a: &Assignments) {
+pub fn display_stats(a: &Assignments, eliminated: usize) {
     let students = a.students.len();
     let lazy = (0..students)
         .filter(|&s| a.rankings(StudentId(s)).is_empty())
         .count();
+    assert!(
+        lazy == 0 || eliminated == 0,
+        "cannot have lazy students if they have been eliminated"
+    );
+    let (unconsidered_str, unconsidered) = if eliminated > 0 {
+        ("unconsidered", eliminated)
+    } else {
+        ("unregistered", lazy)
+    };
     println!(
-        "Students registered/unregistered/total: {}/{}/{}",
+        "Students registered/{}/total: {}/{}/{}",
+        unconsidered_str,
         students - lazy,
-        lazy,
-        students
+        unconsidered,
+        students + eliminated,
     );
     let ranks = stats::statistics(a);
     let cumul = ranks.iter().scan(0, |s, &r| {
