@@ -151,6 +151,7 @@ fn main() -> Result<(), Error> {
         .args_from_usage(
             "
           -c,--config=[FILE]  'Use FILE file instead of rsolver.ini'
+          -d,--drop-lazy      'Do not assign lazy students to any project'
           -n,--dry-run        'Do not write back results to database'
           -r,--rename-lazy    'Rename lazy student into Zzz + order'
           -v...               'Set verbosity level'",
@@ -176,6 +177,20 @@ fn main() -> Result<(), Error> {
             other => bail!("unknown loader: {}", other),
         };
     let (original_students, original_projects) = loader.load()?;
+    let (original_students, mut lazy_students) = if matches.is_present("drop-lazy") {
+        let mut students = Vec::new();
+        let mut lazy_students = Vec::new();
+        for student in original_students.into_iter() {
+            if student.rankings.is_empty() {
+                lazy_students.push(student.id);
+            } else {
+                students.push(student);
+            }
+        }
+        (students, lazy_students)
+    } else {
+        (original_students, vec![])
+    };
     let (students, projects) = {
         let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
         // Work with normalized values (students and projets starting at 0 and without gaps)
@@ -194,11 +209,12 @@ fn main() -> Result<(), Error> {
         algo.assign()?;
     }
     if !dry_run {
-        let unassigned_students = assignments
+        let mut unassigned_students = assignments
             .unassigned_students()
             .iter()
             .map(|s| original_students[s.0].id)
             .collect::<Vec<_>>();
+        unassigned_students.append(&mut lazy_students);
         let assignments = assignments
             .students
             .iter()
