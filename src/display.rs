@@ -81,7 +81,8 @@ pub fn display_stats(a: &Assignments, eliminated: usize) {
 }
 
 pub fn display_empty(a: &Assignments) {
-    let projects = a.filter_projects(|p| !a.is_open(p));
+    let mut projects = a.filter_projects(|p| !a.is_open(p));
+    projects.sort_by_key(|&p| a.project(p).name.clone());
     if !projects.is_empty() {
         println!("Empty projects:");
         for p in projects {
@@ -91,7 +92,7 @@ pub fn display_empty(a: &Assignments) {
 }
 
 pub fn display_with_many_lazy(a: &Assignments) {
-    let projects = a
+    let mut projects = a
         .filter_projects(|p| a.is_open(p))
         .iter()
         .filter_map(|&p| {
@@ -104,6 +105,7 @@ pub fn display_with_many_lazy(a: &Assignments) {
             }
         })
         .collect::<Vec<_>>();
+    projects.sort_by_key(|&(p, _, _)| a.project(p).name.clone());
     if !projects.is_empty() {
         println!(
             "Projects with at least half the members being unregistered students (unregistered/total):"
