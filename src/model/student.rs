@@ -1,7 +1,7 @@
 use super::ProjectId;
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct StudentId(pub usize);
 
 #[derive(Clone, Debug)]

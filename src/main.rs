@@ -176,8 +176,10 @@ fn main() -> Result<(), Error> {
             "sqlite" => Box::new(SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
+    // Load data from the database
     let (original_students, original_projects) = loader.load()?;
-    let (original_students, mut lazy_students) = if matches.is_present("drop-lazy") {
+    // Isolate lazy students before remapping if asked to do so
+    let (original_students, lazy_students) = if matches.is_present("drop-lazy") {
         let mut students = Vec::new();
         let mut lazy_students = Vec::new();
         for student in original_students.into_iter() {
@@ -191,34 +193,43 @@ fn main() -> Result<(), Error> {
     } else {
         (original_students, vec![])
     };
+    // Remap students and projects into contiguous values for the algorithm sake
     let (students, projects) = {
         let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
         // Work with normalized values (students and projets starting at 0 and without gaps)
         remap(&mut students, &mut projects);
         (students, projects)
     };
-    let mut assignments = Assignments::new(students, projects);
-    {
-        let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
-            .unwrap_or_else(|| "hungarian".to_owned())[..]
+    // Compute the new assignments
+    let assignments = {
+        let mut assignments = Assignments::new(students, projects);
         {
-            "ordering" => Box::new(Ordering::new(&mut assignments)),
-            "hungarian" => Box::new(Hungarian::new(&mut assignments, &config)?),
-            other => bail!("unknown algorithm: {}", other),
-        };
-        algo.assign()?;
-    }
+            let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
+                .unwrap_or_else(|| "hungarian".to_owned())[..]
+            {
+                "ordering" => Box::new(Ordering::new(&mut assignments)),
+                "hungarian" => Box::new(Hungarian::new(&mut assignments, &config)?),
+                other => bail!("unknown algorithm: {}", other),
+            };
+            algo.assign()?;
+        }
+        assignments
+    };
     if !dry_run {
+        // Make a list of unassigned students, be it from the algorithm
+        // or because lazy students were singled out beforehand
         let mut unassigned_students = assignments
             .unassigned_students()
             .iter()
             .map(|s| original_students[s.0].id)
             .collect::<Vec<_>>();
-        unassigned_students.append(&mut lazy_students);
+        unassigned_students.append(&mut lazy_students.clone());
+        unassigned_students.sort();
+        // Other students, i.e. assigned students
         let assignments = assignments
             .students
             .iter()
-            .filter(|s| !unassigned_students.contains(&s.id))
+            .filter(|s| unassigned_students.binary_search(&s.id).is_err())
             .map(|s| {
                 (
                     original_students[s.id.0].id,
@@ -226,6 +237,7 @@ fn main() -> Result<(), Error> {
                 )
             })
             .collect::<Vec<_>>();
+        // Save the assignments and non-assignments into the database
         loader.save_assignments(&assignments, &unassigned_students)?
     }
     // Rename lazy students if requested, to ease output comparison
