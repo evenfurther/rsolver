@@ -116,6 +116,7 @@ fn main() -> Result<(), Error> {
     display::display_details(&assignments, matches.is_present("rename-lazy"));
     display::display_stats(&assignments, lazy_students.len());
     display::display_empty(&assignments);
+    display::display_with_many_lazy(&assignments);
     checks::check_pinned_consistency(&assignments);
     ensure!(
         assignments.unassigned_students().is_empty(),

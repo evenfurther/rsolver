@@ -89,3 +89,27 @@ pub fn display_empty(a: &Assignments) {
         }
     }
 }
+
+pub fn display_with_many_lazy(a: &Assignments) {
+    let projects = a
+        .filter_projects(|p| a.is_open(p))
+        .iter()
+        .filter_map(|&p| {
+            let lazy = a.students_for(p).iter().filter(|&&s| a.is_lazy(s)).count();
+            let regular = a.students_for(p).len() - lazy;
+            if lazy >= regular {
+                Some((p, regular, lazy))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    if !projects.is_empty() {
+        println!(
+            "Projects with at least half the members being unregistered students (lazy/total):"
+        );
+        for (p, regular, lazy) in projects {
+            println!("  - {} ({}/{})", a.project(p).name, lazy, lazy + regular);
+        }
+    }
+}
