@@ -176,9 +176,12 @@ fn main() -> Result<(), Error> {
             other => bail!("unknown loader: {}", other),
         };
     let (original_students, original_projects) = loader.load()?;
-    let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
-    // Work with normalized values (students and projets starting at 0 and without gaps)
-    remap(&mut students, &mut projects);
+    let (students, projects) = {
+        let (mut students, mut projects) = (original_students.clone(), original_projects.clone());
+        // Work with normalized values (students and projets starting at 0 and without gaps)
+        remap(&mut students, &mut projects);
+        (students, projects)
+    };
     let mut assignments = Assignments::new(students, projects);
     {
         let mut algo: Box<dyn Algo> = match &get_config(&config, "solver", "algorithm")
