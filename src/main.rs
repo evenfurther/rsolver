@@ -115,6 +115,7 @@ fn main() -> Result<(), Error> {
     // Rename lazy students if requested, to ease output comparison
     display::display_details(&assignments, matches.is_present("rename-unregistered"));
     display::display_stats(&assignments, lazy_students.len());
+    display::display_missed_bonuses(&assignments);
     display::display_empty(&assignments);
     display::display_with_many_lazy(&assignments);
     checks::check_pinned_consistency(&assignments);

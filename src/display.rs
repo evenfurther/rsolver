@@ -115,3 +115,54 @@ pub fn display_with_many_lazy(a: &Assignments) {
         }
     }
 }
+
+pub fn display_missed_bonuses(a: &Assignments) {
+    let mut missed_bonuses = a
+        .all_students()
+        .into_iter()
+        .flat_map(|s| {
+            if let Some(p) = a.project_for(s) {
+                if a.bonus(s, p).is_some() {
+                    vec![]
+                } else if let Some(r) = a.rank_of(s, p) {
+                    let mut bonuses = a
+                        .bonuses(s)
+                        .iter()
+                        .filter_map(|(&pp, &b)| {
+                            a.rank_of(s, pp).and_then(|rr| {
+                                if rr < r && b > 0 {
+                                    Some((s, p, r, pp, rr, b))
+                                } else {
+                                    None
+                                }
+                            })
+                        })
+                        .collect::<Vec<_>>();
+                    bonuses.sort_by_key(|&(_s, _p, _r, _pp, rr, _b)| rr);
+                    bonuses
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            }
+        })
+        .collect::<Vec<_>>();
+    if !missed_bonuses.is_empty() {
+        missed_bonuses.sort_by_key(|&(s, _p, _r, pp, _rr, b)| {
+            (a.project(pp).name.clone(), -b, a.student(s).name.clone())
+        });
+        println!("Useless bonuses:");
+        for (s, p, r, pp, rr, b) in missed_bonuses {
+            println!(
+                "  - {} was assigned to {} (rank {}) despite having a bonus of {} for {} (rank {})",
+                a.student(s).name,
+                a.project(p).name,
+                r + 1,
+                b,
+                a.project(pp).name,
+                rr + 1
+            );
+        }
+    }
+}
