@@ -57,7 +57,7 @@ impl Assignments {
     }
 
     pub fn all_projects(&self) -> Vec<ProjectId> {
-        self.filter_projects(|_| true)
+        (0..self.projects.len()).map(ProjectId).collect()
     }
 
     pub fn filter_projects<F>(&self, condition: F) -> Vec<ProjectId>
