@@ -2,12 +2,12 @@ use crate::model::{Assignments, StudentId};
 use crate::stats;
 
 pub fn display_details(a: &Assignments, rename_lazy: bool) {
-    let mut projects = a.projects.clone();
-    projects.sort_by_key(|ref p| p.name.clone());
-    for p in &projects {
+    let mut projects = a.filter_projects(|p| a.is_open(p));
+    projects.sort_by_key(|&p| a.project(p).name.clone());
+    for p in projects {
         let mut lazy_index = 0;
         let mut students = a
-            .students_for(p.id)
+            .students_for(p)
             .iter()
             .map(|&s| {
                 (
@@ -23,13 +23,21 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
             .collect::<Vec<_>>();
         students.sort_by_key(|(name, _)| name.clone());
         if !students.is_empty() {
-            println!("{}:", p.name);
+            if a.max_occurrences(p) != 1 {
+                println!(
+                    "{} ({} occurrences):",
+                    a.project(p).name,
+                    a.max_occurrences(p)
+                );
+            } else {
+                println!("{}:", a.project(p).name);
+            }
             for (name, s) in students {
                 print!("  - {}", name);
-                if let Some(rank) = a.rank_of(s, p.id) {
+                if let Some(rank) = a.rank_of(s, p) {
                     print!(" (rank {})", rank + 1);
                 }
-                if a.is_pinned_and_has_chosen(s, p.id) {
+                if a.is_pinned_and_has_chosen(s, p) {
                     print!(" (pinned)");
                 }
                 println!();
@@ -59,6 +67,14 @@ pub fn display_stats(a: &Assignments, eliminated: usize) {
         students - lazy,
         unconsidered,
         students + eliminated,
+    );
+    println!(
+        "Projects/occurrences: {}/{}",
+        a.filter_projects(|p| a.is_open(p)).len(),
+        a.filter_projects(|p| a.is_open(p))
+            .into_iter()
+            .map(|p| a.max_occurrences(p))
+            .sum::<usize>()
     );
     let ranks = stats::statistics(a);
     let cumul = ranks.iter().scan(0, |s, &r| {
