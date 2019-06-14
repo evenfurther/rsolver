@@ -7,7 +7,7 @@ const PINNING_BONUS: isize = 1000;
 #[derive(Debug)]
 pub struct Assignments {
     pub students: Vec<Student>,
-    pub projects: Vec<Project>,
+    projects: Vec<Project>,
     max_occurrences: Vec<usize>,
     assigned_to: Vec<Option<ProjectId>>,
     assigned: Vec<Vec<StudentId>>,

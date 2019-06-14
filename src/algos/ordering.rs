@@ -122,7 +122,7 @@ impl<'a> Algo for Ordering<'a> {
     fn assign(&mut self) -> Result<(), Error> {
         loop {
             self.first_non_cancelled_choice();
-            for rank in 1..self.assignments.projects.len() {
+            for rank in 1..self.assignments.all_projects().len() {
                 if !self.solve_overflow_to_rank(rank) {
                     info!("Everyone has been assigned up to rank {}", rank);
                     break;
