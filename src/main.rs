@@ -99,13 +99,12 @@ fn main() -> Result<(), Error> {
         unassigned_students.sort();
         // Other students, i.e. assigned students
         let assignments = assignments
-            .students
-            .iter()
-            .filter(|s| unassigned_students.binary_search(&s.id).is_err())
+            .filter_students(|s| unassigned_students.binary_search(&s).is_err())
+            .into_iter()
             .map(|s| {
                 (
-                    original_students[s.id.0].id,
-                    original_projects[assignments.project_for(s.id).unwrap().0].id,
+                    original_students[s.0].id,
+                    original_projects[assignments.project_for(s).unwrap().0].id,
                 )
             })
             .collect::<Vec<_>>();

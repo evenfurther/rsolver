@@ -6,7 +6,7 @@ const PINNING_BONUS: isize = 1000;
 
 #[derive(Debug)]
 pub struct Assignments {
-    pub students: Vec<Student>,
+    students: Vec<Student>,
     projects: Vec<Project>,
     max_occurrences: Vec<usize>,
     assigned_to: Vec<Option<ProjectId>>,
@@ -65,19 +65,23 @@ impl Assignments {
         F: Fn(ProjectId) -> bool,
     {
         (0..self.projects.len())
-            .filter_map(|project| {
-                let project = ProjectId(project);
-                if condition(project) {
-                    Some(project)
-                } else {
-                    None
-                }
-            })
+            .map(ProjectId)
+            .filter(|&p| condition(p))
             .collect()
     }
 
     pub fn all_students(&self) -> Vec<StudentId> {
         (0..self.students.len()).map(StudentId).collect()
+    }
+
+    pub fn filter_students<F>(&self, condition: F) -> Vec<StudentId>
+    where
+        F: Fn(StudentId) -> bool,
+    {
+        (0..self.students.len())
+            .map(StudentId)
+            .filter(|&s| condition(s))
+            .collect()
     }
 
     pub fn rankings(&self, student: StudentId) -> &Vec<ProjectId> {

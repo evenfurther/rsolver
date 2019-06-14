@@ -48,7 +48,7 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
 }
 
 pub fn display_stats(a: &Assignments, eliminated: usize) {
-    let students = a.students.len();
+    let students = a.all_students().len();
     let lazy = (0..students)
         .filter(|&s| a.rankings(StudentId(s)).is_empty())
         .count();

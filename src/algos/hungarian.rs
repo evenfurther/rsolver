@@ -31,7 +31,7 @@ impl<'a> Hungarian<'a> {
 
     /// Compute the weights indexed by student then by project (less is better).
     fn compute_weights(a: &Assignments, rank_mult: isize, rank_pow: u32) -> Matrix<isize> {
-        let slen = a.students.len() as isize;
+        let slen = a.all_students().len() as isize;
         let mut seats = Vec::new();
         let mut seats_for = HashMap::new();
         for p in a.all_projects() {
@@ -41,14 +41,14 @@ impl<'a> Hungarian<'a> {
         }
         let large = isize::MAX / (1 + slen);
         let unregistered = large / (1 + slen);
-        let mut weights = Matrix::new(a.students.len(), a.all_projects().len(), unregistered);
-        for s in &a.students {
+        let mut weights = Matrix::new(a.all_students().len(), a.all_projects().len(), unregistered);
+        for s in a.all_students() {
             for p in a.all_projects() {
-                if let Some(rank) = a.rank_of(s.id, p) {
-                    weights[&(s.id.0, p.0)] = if a.is_pinned_and_has_chosen(s.id, p) {
+                if let Some(rank) = a.rank_of(s, p) {
+                    weights[&(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
                         -large
                     } else {
-                        (rank as isize * rank_mult).pow(rank_pow) - a.bonus(s.id, p).unwrap_or(0)
+                        (rank as isize * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
                     };
                 }
             }
@@ -73,7 +73,7 @@ impl<'a> Hungarian<'a> {
     /// Assign every student to a project. There must be enough seats for every
     /// student or this function will panic.
     fn hungarian_algorithm(&mut self) {
-        let slen = self.assignments.students.len() as isize;
+        let slen = self.assignments.all_students().len();
         let mut seats = Vec::new();
         let mut seats_for = HashMap::new();
         for p in self.assignments.all_projects() {
@@ -81,14 +81,14 @@ impl<'a> Hungarian<'a> {
             seats_for.insert(p, (seats.len()..seats.len() + n).collect::<Vec<_>>());
             seats.extend(iter::repeat(p).take(n));
         }
-        let large = isize::MAX / (1 + slen);
-        let mut prefs = Matrix::new(self.assignments.students.len(), seats.len(), large);
-        for s in &self.assignments.students {
+        let large = isize::MAX / (1 + slen as isize);
+        let mut prefs = Matrix::new(slen, seats.len(), large);
+        for s in self.assignments.all_students() {
             for p in self.assignments.all_projects() {
                 if !self.assignments.is_cancelled(p) {
-                    let score = self.weight_of(s.id, p);
+                    let score = self.weight_of(s, p);
                     for n in &seats_for[&p] {
-                        prefs[&(s.id.0, *n)] = score;
+                        prefs[&(s.0, *n)] = score;
                     }
                 }
             }
