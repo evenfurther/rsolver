@@ -45,6 +45,7 @@ fn main() -> Result<(), Error> {
         .args_from_usage(
             "
           -c,--config=[FILE]        'Use FILE file instead of rsolver.ini'
+          -C,--csv                  'Output assignments as CSV file'
           -d,--drop-unregistered    'Do not assign unregistered students to any project'
           -n,--dry-run              'Do not write back results to database'
           -r,--rename-unregistered  'Rename lazy student into Zzz + order'
@@ -111,12 +112,17 @@ fn main() -> Result<(), Error> {
         // Save the assignments and non-assignments into the database
         loader.save_assignments(&assignments, &unassigned_students)?
     }
-    // Rename lazy students if requested, to ease output comparison
-    display::display_details(&assignments, matches.is_present("rename-unregistered"));
-    display::display_stats(&assignments, lazy_students.len());
-    display::display_missed_bonuses(&assignments);
-    display::display_empty(&assignments);
-    display::display_with_many_lazy(&assignments);
+    // If CSV output is requested, only output assignments
+    if matches.is_present("csv") {
+        display::display_csv(&assignments)?;
+    } else {
+        // Rename lazy students if requested, to ease output comparison
+        display::display_details(&assignments, matches.is_present("rename-unregistered"));
+        display::display_stats(&assignments, lazy_students.len());
+        display::display_missed_bonuses(&assignments);
+        display::display_empty(&assignments);
+        display::display_with_many_lazy(&assignments);
+    }
     checks::check_pinned_consistency(&assignments);
     ensure!(
         assignments.unassigned_students().is_empty(),

@@ -1,5 +1,6 @@
 use crate::model::{Assignments, StudentId};
 use crate::stats;
+use failure::Error;
 
 pub fn display_details(a: &Assignments, rename_lazy: bool) {
     let mut projects = a.filter_projects(|p| a.is_open(p));
@@ -181,4 +182,28 @@ pub fn display_missed_bonuses(a: &Assignments) {
             );
         }
     }
+}
+
+pub fn display_csv(a: &Assignments) -> Result<(), Error> {
+    let mut wtr = csv::Writer::from_writer(std::io::stdout());
+    wtr.write_record(&["last_name", "first_name", "project"])?;
+    let mut projects = a.filter_projects(|p| a.is_open(p));
+    projects.sort_by_key(|&p| a.project(p).name.clone());
+    for p in projects {
+        let mut students = a.students_for(p).clone();
+        students.sort_by_key(|&s| {
+            (
+                a.student(s).last_name.clone(),
+                a.student(s).first_name.clone(),
+            )
+        });
+        for s in students {
+            wtr.write_record(&[
+                &a.student(s).last_name,
+                &a.student(s).first_name,
+                &a.project(p).name,
+            ])?;
+        }
+    }
+    Ok(())
 }
