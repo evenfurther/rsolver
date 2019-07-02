@@ -7,12 +7,32 @@ pub struct StudentId(pub usize);
 #[derive(Clone, Debug)]
 pub struct Student {
     pub id: StudentId,
+    pub first_name: String,
+    pub last_name: String,
     pub name: String,
     pub rankings: Vec<ProjectId>,
     pub bonuses: HashMap<ProjectId, isize>,
 }
 
 impl Student {
+    pub fn new(
+        id: StudentId,
+        first_name: String,
+        last_name: String,
+        rankings: Vec<ProjectId>,
+        bonuses: HashMap<ProjectId, isize>,
+    ) -> Student {
+        let name = format!("{} {}", first_name, last_name);
+        Student {
+            id,
+            first_name,
+            last_name,
+            name,
+            rankings,
+            bonuses,
+        }
+    }
+
     pub fn rank_of(&self, project: ProjectId) -> Option<usize> {
         self.rankings.iter().position(|&p| p == project)
     }

@@ -58,15 +58,16 @@ impl Loader for SqliteLoader {
 
     load!(
         load_students,
-        "SELECT id, prenom || ' ' || nom FROM eleves",
+        "SELECT id, prenom, nom FROM eleves",
         Student,
         row,
-        Student {
-            id: StudentId(row.get::<_, u32>(0)? as usize),
-            name: row.get(1)?,
-            rankings: Vec::new(),
-            bonuses: HashMap::new(),
-        }
+        Student::new(
+            StudentId(row.get::<_, u32>(0)? as usize),
+            row.get(1)?,
+            row.get(2)?,
+            Vec::new(),
+            HashMap::new()
+        )
     );
 
     load!(

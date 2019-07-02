@@ -75,15 +75,16 @@ impl Loader for MysqlLoader {
 
     load!(
         load_students,
-        "SELECT id, CONCAT(prenom, ' ', nom) FROM eleves",
+        "SELECT id, prenom, nom FROM eleves",
         Student,
-        (id, name),
-        Student {
-            id: StudentId(id),
-            name,
-            rankings: Vec::new(),
-            bonuses: HashMap::new(),
-        }
+        (id, first_name, last_name),
+        Student::new(
+            StudentId(id),
+            first_name,
+            last_name,
+            Vec::new(),
+            HashMap::new()
+        )
     );
 
     load!(
