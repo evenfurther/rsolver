@@ -18,5 +18,5 @@ pub fn get_config(config: &Config, section: &str, key: &str) -> Option<String> {
         .conf
         .section(Some(section.to_owned()))
         .and_then(|s| s.get(key))
-        .cloned()
+        .map(String::from)
 }

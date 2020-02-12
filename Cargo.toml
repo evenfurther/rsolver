@@ -1,6 +1,6 @@
 [package]
 name = "rsolver"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 edition = "2018"
 
@@ -13,7 +13,7 @@ mysql = "17.0.0"
 pathfinding = "2.0.3"
 rand = "0.7.2"
 rusqlite = { version = "0.21.0", optional = true }
-rust-ini = "0.13.0"
+rust-ini = "0.15.0"
 csv = "1.1.1"
 
 [features]

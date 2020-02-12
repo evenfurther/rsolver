@@ -40,7 +40,7 @@ fn assign(
 fn main() -> Result<(), Error> {
     let matches = App::new("rsolver")
         .about("Automatically assign projects to students")
-        .author(crate_authors!("\n"))
+        .author(crate_authors!())
         .version(crate_version!())
         .args_from_usage(
             "
