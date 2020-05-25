@@ -3,6 +3,7 @@ use crate::model::*;
 use crate::{get_config, Config};
 use failure::{Error, ResultExt};
 use my::params;
+use my::prelude::*;
 use mysql as my;
 use std::collections::HashMap;
 
@@ -14,23 +15,24 @@ pub struct MysqlLoader {
 
 macro_rules! load {
     ($name:ident, $query:expr, $ty:ty, $pattern:pat, $value:expr) => {
-        fn $name(&self) -> Result<Vec<$ty>, Error> {
-            Ok(self.pool.prep_exec($query, ()).and_then(|result| {
+        fn $name(&self) -> Result<Vec<$ty>, failure::Error> {
+            Ok($query.run(&self.pool).and_then(|result| {
                 result
+                    .into_iter()
                     .map(|row| {
                         row.map(|row| {
                             let $pattern = my::from_row(row);
                             $value
                         })
                     })
-                .collect::<Result<Vec<_>, _>>()
+                    .collect::<Result<Vec<_>, _>>()
             })?)
         }
     };
 }
 
 impl MysqlLoader {
-    pub fn new(config: &Config) -> Result<MysqlLoader, Error> {
+    pub fn new(config: &Config) -> Result<MysqlLoader, failure::Error> {
         let host = get_config(config, "mysql", "host");
         let port = get_config(config, "mysql", "port")
             .map(|p| p.parse::<u16>().context("parsing mysql port"))
@@ -41,8 +43,8 @@ impl MysqlLoader {
         let force_tcp = get_config(config, "mysql", "force-tcp")
             .map(|p| p.parse::<bool>().context("parsing force-tcp"))
             .unwrap_or(Ok(false))?;
-        let mut opts = my::OptsBuilder::new();
-        opts.ip_or_hostname(host)
+        let opts = my::OptsBuilder::new()
+            .ip_or_hostname(host)
             .tcp_port(port)
             .prefer_socket(!force_tcp)
             .user(user)
@@ -116,23 +118,25 @@ impl Loader for MysqlLoader {
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
     ) -> Result<(), Error> {
-        let mut stmt = self
-            .pool
-            .prepare("UPDATE eleves SET attribution=:attribution WHERE id=:id")
+        let mut conn = self.pool.get_conn()?;
+        let stmt = conn
+            .prep("UPDATE eleves SET attribution=:attribution WHERE id=:id")
             .context("cannot prepare statement")?;
         for (s, p) in assignments {
-            stmt.execute(params! {
-                "id" => s.0,
-                "attribution" => p.0,
-            })
+            conn.exec_drop(
+                stmt.clone(),
+                params! {
+                    "id" => s.0,
+                    "attribution" => p.0,
+                },
+            )
             .context("cannot save attributions")?;
         }
-        let mut stmt = self
-            .pool
-            .prepare("UPDATE eleves SET attribution=NULL WHERE id=:id")
+        let stmt = conn
+            .prep("UPDATE eleves SET attribution=NULL WHERE id=:id")
             .context("cannot prepare statement")?;
         for s in unassigned {
-            stmt.execute(params! { "id" => s.0 })
+            conn.exec_drop(stmt.clone(), params! { "id" => s.0 })
                 .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())

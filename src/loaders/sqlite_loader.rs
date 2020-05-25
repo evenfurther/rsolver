@@ -16,17 +16,13 @@ pub struct SqliteLoader {
 macro_rules! load {
     ($name:ident, $query:expr, $ty:ty, $row:ident, $value:expr) => {
         fn $name(&self) -> Result<Vec<$ty>, Error> {
-        let mut stmt = self
-            .conn
-            .prepare($query)?;
-        let result = stmt
-            .query_map(NO_PARAMS, |$row| {
-                Ok($value)
-            })?
-            .collect::<Result<Vec<_>, _>>();
-        Ok(result?)
+            let mut stmt = self.conn.prepare($query)?;
+            let result = stmt
+                .query_map(NO_PARAMS, |$row| Ok($value))?
+                .collect::<Result<Vec<_>, _>>();
+            Ok(result?)
         }
-    }
+    };
 }
 
 impl SqliteLoader {
