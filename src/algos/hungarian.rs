@@ -176,11 +176,16 @@ impl<'a> Hungarian<'a> {
     /// some opened projects might be unacceptable as-is.
     fn open_new_projects_as_needed(&mut self) {
         let mut unassigned = self.assignments.unassigned_students();
+        let mut new_occurrences = false;
         while !unassigned.is_empty() {
             match self
                 .assignments
                 .filter_projects(|p| {
-                    !self.assignments.is_cancelled(p) && !self.assignments.is_open(p)
+                    !self.assignments.is_cancelled(p)
+                        && (!self.assignments.is_open(p)
+                            || (new_occurrences
+                                && self.assignments.current_occurrences(p)
+                                    < self.assignments.max_occurrences(p)))
                 })
                 .into_iter()
                 .filter(|&p| self.assignments.min_students(p) <= unassigned.len())
@@ -188,7 +193,12 @@ impl<'a> Hungarian<'a> {
             {
                 Some(p) => {
                     trace!(
-                        "Opening new project {} for {} students",
+                        "Opening new {} {} for {} students",
+                        if new_occurrences {
+                            "occurrence of project"
+                        } else {
+                            "project"
+                        },
                         self.assignments.project(p).name,
                         self.assignments.project(p).min_students
                     );
@@ -200,11 +210,16 @@ impl<'a> Hungarian<'a> {
                     }
                 }
                 None => {
-                    debug!(
-                        "Cannot find new project to open for {} unassigned students",
-                        unassigned.len()
-                    );
-                    break;
+                    if new_occurrences {
+                        debug!(
+                            "Cannot find new project to open for {} unassigned students",
+                            unassigned.len()
+                        );
+                        break;
+                    } else {
+                        debug!("Allowing opening of new occurrences");
+                        new_occurrences = true;
+                    }
                 }
             }
         }
@@ -242,12 +257,12 @@ impl<'a> Hungarian<'a> {
                 )
             })
     }
-}
 
-impl<'a> Algo for Hungarian<'a> {
-    fn assign(&mut self) -> Result<(), Error> {
-        // Check that we have enough open positions for all our students.
-        self.assignments.check_number_of_seats()?;
+    /// Compute the assigments, without checking that we have enough for all students.
+    /// We just need to have enough for non-lazy students at this stage.
+    fn do_assignments(&mut self) -> Result<(), Error> {
+        // Check that we have enough projects for our non-lazy students.
+        self.assignments.check_number_of_seats(true)?;
 
         // Run the Hungarian algorithm to assign every students to the best
         // possible project (school-wise).
@@ -274,7 +289,7 @@ impl<'a> Algo for Hungarian<'a> {
             );
             self.assignments.clear_all_assignments();
             self.assignments.cancel_occurrence(to_cancel);
-            return self.assign();
+            return self.do_assignments();
         }
 
         // As long as we have non-full projects, complete them with unassigned students
@@ -290,7 +305,7 @@ impl<'a> Algo for Hungarian<'a> {
         self.complete_non_full_projects();
 
         // If at this stage some students still cannot be assigned, cancel the smallest
-        // occurrence having only lazy students to force another larger project to open.
+        // occurrence having only lazy students to force another larger project to open,
         if !self.assignments.unassigned_students().is_empty() {
             if let Some(to_cancel) = self.find_occurrence_to_cancel(true) {
                 info!(
@@ -302,7 +317,7 @@ impl<'a> Algo for Hungarian<'a> {
             );
                 self.assignments.clear_all_assignments();
                 self.assignments.cancel_occurrence(to_cancel);
-                return self.assign();
+                return self.do_assignments();
             } else {
                 bail!(
                     "unable to assign a project to {} students",
@@ -312,6 +327,16 @@ impl<'a> Algo for Hungarian<'a> {
         }
 
         Ok(())
+    }
+}
+
+impl<'a> Algo for Hungarian<'a> {
+    fn assign(&mut self) -> Result<(), Error> {
+        // Check that we have enough open positions for all our students.
+        self.assignments.check_number_of_seats(false)?;
+
+        // Proceed.
+        self.do_assignments()
     }
 
     fn get_assignments(&self) -> &Assignments {

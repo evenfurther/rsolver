@@ -243,6 +243,11 @@ impl Assignments {
         self.max_occurrences[project] == 0
     }
 
+    pub fn current_occurrences(&self, project: ProjectId) -> usize {
+        let max = self.max_students(project);
+        (self.students_for(project).len() + max - 1) / max
+    }
+
     pub fn max_occurrences(&self, ProjectId(project): ProjectId) -> usize {
         self.max_occurrences[project]
     }
@@ -316,16 +321,22 @@ impl Assignments {
     }
 
     /// Check that there are enough seats for all students.
-    pub fn check_number_of_seats(&self) -> Result<(), Error> {
+    pub fn check_number_of_seats(&self, exclude_lazy: bool) -> Result<(), Error> {
         let seats = self
             .all_projects()
             .into_iter()
             .map(|p| self.max_capacity(p))
             .sum::<usize>();
+        let students = if exclude_lazy {
+            self.students.iter().filter(|s| !s.is_lazy()).count()
+        } else {
+            self.students.len()
+        };
         ensure!(
-            seats >= self.students.len(),
-            "insufficient number of open projects, can host {} students out of {}",
+            seats >= students,
+            "insufficient number of open projects, can host {} {}students out of {}",
             seats,
+            if exclude_lazy { "non-lazy " } else { "" },
             self.students.len()
         );
         Ok(())
