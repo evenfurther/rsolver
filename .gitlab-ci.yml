@@ -15,7 +15,7 @@ cache:
   before_script:
     - rustup install $RUST
   script:
-    - cargo +$RUST test
+    - cargo +$RUST test --all-features
 
 stable:
   <<: *cargo_test
@@ -32,11 +32,20 @@ nightly:
   variables:
     RUST: nightly
 
-nightly_fmt:
+stable_fmt:
+  <<: *cargo_test
+  stage: lint
+  variables:
+    RUST: stable
+  script:
+    - rustup component add --toolchain $RUST rustfmt
+    - cargo +$RUST fmt --all -- --check
+
+nightly_clippy:
   <<: *cargo_test
   stage: lint
   variables:
     RUST: nightly
   script:
-    - rustup component add --toolchain $RUST rustfmt-preview
-    - cargo +$RUST fmt --all -- --check
+    - rustup component add --toolchain $RUST clippy
+    - cargo +$RUST clippy --all-features
