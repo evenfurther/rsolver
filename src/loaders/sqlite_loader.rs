@@ -4,7 +4,7 @@ use super::loader::Loader;
 use crate::model::*;
 use crate::{get_config, Config};
 use failure::{format_err, Error, ResultExt};
-use rusqlite::{Connection, NO_PARAMS};
+use rusqlite::Connection;
 use std::collections::HashMap;
 
 pub struct SqliteLoader {
@@ -16,7 +16,7 @@ macro_rules! load {
         fn $name(&self) -> Result<Vec<$ty>, Error> {
             let mut stmt = self.conn.prepare($query)?;
             let result = stmt
-                .query_map(NO_PARAMS, |$row| Ok($value))?
+                .query_map([], |$row| Ok($value))?
                 .collect::<Result<Vec<_>, _>>();
             Ok(result?)
         }
@@ -95,7 +95,7 @@ impl Loader for SqliteLoader {
             self.conn
                 .execute(
                     "UPDATE eleves SET attribution=?1 WHERE id=?2",
-                    &[p.0 as u32, s.0 as u32],
+                    [p.0 as u32, s.0 as u32],
                 )
                 .context("cannot save attributions")?;
         }
@@ -103,7 +103,7 @@ impl Loader for SqliteLoader {
             self.conn
                 .execute(
                     "UPDATE eleves SET attribution=NULL WHERE id=?1",
-                    &[s.0 as u32],
+                    [s.0 as u32],
                 )
                 .context("cannot delete attribution for unassigned student")?;
         }
