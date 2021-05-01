@@ -9,8 +9,6 @@ use std::collections::HashMap;
 
 pub struct SqliteLoader {
     conn: Connection,
-    students: Vec<Student>,
-    projects: Vec<Project>,
 }
 
 macro_rules! load {
@@ -31,8 +29,6 @@ impl SqliteLoader {
             .ok_or_else(|| format_err!("cannot find sqlite file"))?;
         Ok(SqliteLoader {
             conn: Connection::open(filename)?,
-            students: Vec::new(),
-            projects: Vec::new(),
         })
     }
 }
@@ -89,14 +85,6 @@ impl Loader for SqliteLoader {
             row.get::<_, i32>(2)? as isize,
         )
     );
-
-    fn store_projects(&mut self, projects: &[Project]) {
-        self.projects = projects.to_vec();
-    }
-
-    fn store_students(&mut self, students: &[Student]) {
-        self.students = students.to_vec();
-    }
 
     fn save_assignments(
         &self,

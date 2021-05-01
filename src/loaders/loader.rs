@@ -18,19 +18,9 @@ pub trait Loader {
         bail!("implementation needed")
     }
 
-    fn store_projects(&mut self, _projects: &[Project]) {
-        // Do nothing
-    }
-
-    fn store_students(&mut self, _students: &[Student]) {
-        // Do nothing
-    }
-
     fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
         let projects = self.load_projects().context("cannot load projects")?;
-        self.store_projects(&projects.clone());
         let mut students = self.load_students().context("cannot load students")?;
-        self.store_students(&students.clone());
         let preferences = self.load_preferences().context("cannot load rankings")?;
         let bonuses = self.load_bonuses().context("cannot load bonuses")?;
         for student in &mut students {

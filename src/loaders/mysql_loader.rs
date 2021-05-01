@@ -9,8 +9,6 @@ use std::collections::HashMap;
 
 pub struct MysqlLoader {
     pool: my::Pool,
-    students: Vec<Student>,
-    projects: Vec<Project>,
 }
 
 macro_rules! load {
@@ -52,11 +50,7 @@ impl MysqlLoader {
             .db_name(database);
         Ok(my::Pool::new(opts)
             .context("mysql connection")
-            .map(|pool| MysqlLoader {
-                pool,
-                students: Vec::new(),
-                projects: Vec::new(),
-            })?)
+            .map(|pool| MysqlLoader { pool })?)
     }
 }
 
@@ -104,14 +98,6 @@ impl Loader for MysqlLoader {
         (student_id, project_id, weight),
         (StudentId(student_id), ProjectId(project_id), weight)
     );
-
-    fn store_projects(&mut self, projects: &[Project]) {
-        self.projects = projects.to_vec();
-    }
-
-    fn store_students(&mut self, students: &[Student]) {
-        self.students = students.to_vec();
-    }
 
     fn save_assignments(
         &self,
