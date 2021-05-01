@@ -7,7 +7,6 @@ use crate::loaders::*;
 use crate::model::*;
 use clap::{crate_authors, crate_version, App};
 use failure::{bail, ensure, Error};
-use flexi_logger;
 
 mod algos;
 mod checks;
