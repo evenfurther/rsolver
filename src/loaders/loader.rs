@@ -1,5 +1,6 @@
 use crate::model::*;
 use failure::{bail, Error, ResultExt};
+use tracing::trace;
 
 pub trait Loader {
     fn load_projects(&self) -> Result<Vec<Project>, Error> {

@@ -1,12 +1,10 @@
-#[macro_use]
-extern crate log;
-
 use crate::algos::*;
 use crate::config::{get_config, Config};
 use crate::loaders::*;
 use crate::model::*;
 use clap::{crate_authors, crate_version, App};
 use failure::{bail, ensure, Error};
+use tracing::Level;
 
 mod algos;
 mod checks;
@@ -52,15 +50,13 @@ fn main() -> Result<(), Error> {
         )
         .get_matches();
     let level = match matches.occurrences_of("v") {
-        0 => "error",
-        1 => "warn",
-        2 => "info",
-        3 => "debug",
-        _ => "trace",
+        0 => Level::ERROR,
+        1 => Level::WARN,
+        2 => Level::INFO,
+        3 => Level::DEBUG,
+        _ => Level::TRACE,
     };
-    flexi_logger::Logger::with_str(format!("rsolver={}", level))
-        .start()
-        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+    tracing_subscriber::fmt::fmt().with_max_level(level).init();
     let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
     let dry_run = matches.is_present("dry_run");
     let mut loader: Box<dyn Loader> =

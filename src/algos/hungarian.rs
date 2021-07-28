@@ -6,6 +6,7 @@ use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
 use std::iter;
+use tracing::{debug, info, trace};
 
 pub struct Hungarian<'a> {
     assignments: &'a mut Assignments,
@@ -118,18 +119,18 @@ impl<'a> Hungarian<'a> {
             let missing = self.assignments.open_spots_for(p)[0];
             if missing > unassigned.len() {
                 debug!(
-                    "Not enough students ({}) to complete more incomplete projects ({} necessary)",
-                    unassigned.len(),
-                    missing
+                    unassigned_students = %unassigned.len(),
+                    necessary_students = %missing,
+                    "Not enough students to complete more incomplete projects",
                 );
                 return;
             }
             for _ in 0..missing {
                 let s = unassigned.pop().unwrap();
                 trace!(
-                    "Assigning {} to incomplete project {}",
-                    self.assignments.student(s).name,
-                    self.assignments.project(p).name
+                    project = %self.assignments.project(p).name,
+                    student = %self.assignments.student(s).name,
+                    "Assigning to incomplete project",
                 );
                 self.assignments.assign_to(s, p);
             }
@@ -159,11 +160,11 @@ impl<'a> Hungarian<'a> {
                 })
             {
                 trace!(
-                    "Assigning {} to non-full project {} with {} lazy students and {} open spots max",
-                    self.assignments.student(s).name,
-                    self.assignments.project(p).name,
-                    self.assignments.lazy_students_count_for(p),
-                    self.assignments.open_spots_for(p).last().unwrap(),
+                    project = %self.assignments.project(p).name,
+                    student = %self.assignments.student(s).name,
+                    lazy_students = %self.assignments.lazy_students_count_for(p),
+                    max_open_spots = %self.assignments.open_spots_for(p).last().unwrap(),
+                    "Assigning student to non-full project",
                 );
                 self.assignments.assign_to(s, p);
             } else {
@@ -193,14 +194,14 @@ impl<'a> Hungarian<'a> {
             {
                 Some(p) => {
                     trace!(
-                        "Opening new {} {} for {} students",
+                        project = %self.assignments.project(p).name,
+                        min_students = %self.assignments.project(p).min_students,
+                        "Opening new {} project",
                         if new_occurrences {
                             "occurrence of project"
                         } else {
                             "project"
-                        },
-                        self.assignments.project(p).name,
-                        self.assignments.project(p).min_students
+                        }
                     );
                     for _ in 0..unassigned
                         .len()
@@ -212,8 +213,8 @@ impl<'a> Hungarian<'a> {
                 None => {
                     if new_occurrences {
                         debug!(
-                            "Cannot find new project to open for {} unassigned students",
-                            unassigned.len()
+                            unassigned_students = %unassigned.len(),
+                            "Cannot find new project to open for unassigned students"
                         );
                         break;
                     } else {
@@ -283,9 +284,9 @@ impl<'a> Hungarian<'a> {
         // the project.
         if let Some(to_cancel) = self.find_occurrence_to_cancel(false) {
             info!(
-                "Cancelling occurrence of project {}, remaining occurrences: {}",
-                self.assignments.project(to_cancel).name,
-                self.assignments.max_occurrences(to_cancel) - 1,
+                project = %self.assignments.project(to_cancel).name,
+                remaining_occurrences = %self.assignments.max_occurrences(to_cancel) - 1,
+                "Cancelling project occurrence"
             );
             self.assignments.clear_all_assignments();
             self.assignments.cancel_occurrence(to_cancel);
@@ -309,12 +310,12 @@ impl<'a> Hungarian<'a> {
         if !self.assignments.unassigned_students().is_empty() {
             if let Some(to_cancel) = self.find_occurrence_to_cancel(true) {
                 info!(
-                "Cancelling occurrence of project {} containing {} lazy students out of {} students, remaining occurrences: {}",
-                self.assignments.project(to_cancel).name,
-                self.assignments.lazy_students_count_for(to_cancel),
-                self.assignments.students_for(to_cancel).len(),
-                self.assignments.max_occurrences(to_cancel) - 1,
-            );
+                    project = %self.assignments.project(to_cancel).name,
+                    lazy_students = %self.assignments.lazy_students_count_for(to_cancel),
+                    total_students = %self.assignments.students_for(to_cancel).len(),
+                    remaining_occurrences = %self.assignments.max_occurrences(to_cancel) - 1,
+                    "Cancelling project occurrence with too many lazy students"
+                );
                 self.assignments.clear_all_assignments();
                 self.assignments.cancel_occurrence(to_cancel);
                 return self.do_assignments();

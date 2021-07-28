@@ -1,14 +1,15 @@
 use crate::model::Assignments;
 use failure::{bail, Error};
+use tracing::warn;
 
 pub fn check_pinned_consistency(a: &Assignments) {
     for s in a.all_students() {
         if let Some(p) = a.rankings(s).get(0) {
             if a.is_pinned_for(s, *p) && a.project_for(s) != Some(*p) {
                 warn!(
-                    "WARNING: student {} did not get pinned project {}",
-                    a.student(s).name,
-                    a.project(*p).name
+                    student = %a.student(s).name,
+                    project = %a.project(*p).name,
+                    "student did not get pinned project"
                 );
             }
         }
