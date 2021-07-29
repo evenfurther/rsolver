@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct ProjectId(pub usize);
 

@@ -1,7 +1,7 @@
-use crate::algos::*;
+use crate::algos::{Algo, Hungarian, Ordering};
 use crate::config::{get_config, Config};
-use crate::loaders::*;
-use crate::model::*;
+use crate::loaders::{Loader, MysqlLoader};
+use crate::model::{Assignments, Project, Student};
 use clap::{crate_authors, crate_version, App};
 use failure::{bail, ensure, Error};
 use tracing::Level;
@@ -105,7 +105,7 @@ fn main() -> Result<(), Error> {
             })
             .collect::<Vec<_>>();
         // Save the assignments and non-assignments into the database
-        loader.save_assignments(&assignments, &unassigned_students)?
+        loader.save_assignments(&assignments, &unassigned_students)?;
     }
     // If CSV output is requested, only output assignments
     if matches.is_present("csv") {

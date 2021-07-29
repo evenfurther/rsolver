@@ -1,4 +1,4 @@
-use super::*;
+use super::{Project, ProjectId, Student, StudentId};
 use failure::{ensure, Error};
 use std::collections::HashMap;
 
@@ -17,22 +17,19 @@ pub struct Assignments {
 #[allow(dead_code)]
 impl Assignments {
     pub fn new(students: Vec<Student>, projects: Vec<Project>) -> Assignments {
-        let slen = students.len();
-        let plen = projects.len();
-        let pinned = (0..plen)
+        let number_of_students = students.len();
+        let number_of_projects = projects.len();
+        let pinned = (0..number_of_projects)
             .map(|project_id| {
                 let project = ProjectId(project_id);
-                (0..slen)
+                (0..number_of_students)
                     .filter_map(|student_id| {
-                        if let Some(bonus) = students[student_id].bonuses.get(&project) {
-                            if *bonus >= PINNING_BONUS {
-                                Some(StudentId(student_id))
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
+                        students[student_id]
+                            .bonuses
+                            .get(&project)
+                            .and_then(|bonus| {
+                                (*bonus >= PINNING_BONUS).then(|| StudentId(student_id))
+                            })
                     })
                     .collect()
             })
@@ -42,8 +39,8 @@ impl Assignments {
             students,
             projects,
             max_occurrences,
-            assigned_to: vec![None; slen],
-            assigned: vec![Vec::new(); plen],
+            assigned_to: vec![None; number_of_students],
+            assigned: vec![Vec::new(); number_of_projects],
             pinned,
         }
     }
@@ -93,7 +90,7 @@ impl Assignments {
     }
 
     pub fn bonus(&self, student: StudentId, project: ProjectId) -> Option<isize> {
-        self.bonuses(student).get(&project).cloned()
+        self.bonuses(student).get(&project).copied()
     }
 
     pub fn project_for(&self, StudentId(student): StudentId) -> Option<ProjectId> {
@@ -101,7 +98,7 @@ impl Assignments {
     }
 
     pub fn project_at_rank(&self, student: StudentId, rank: usize) -> Option<ProjectId> {
-        self.rankings(student).get(rank).cloned()
+        self.rankings(student).get(rank).copied()
     }
 
     pub fn rank_of(&self, student: StudentId, project: ProjectId) -> Option<usize> {
@@ -116,7 +113,7 @@ impl Assignments {
         self.students_for(project)
             .iter()
             .filter(|&&s| self.is_lazy(s))
-            .cloned()
+            .copied()
             .collect()
     }
 
@@ -149,11 +146,8 @@ impl Assignments {
     }
 
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
-        if let Some(project) = self.project_for(student) {
-            self.is_pinned_for(student, project)
-        } else {
-            false
-        }
+        self.project_for(student)
+            .map_or(false, |project| self.is_pinned_for(student, project))
     }
 
     pub fn is_lazy(&self, StudentId(student): StudentId) -> bool {

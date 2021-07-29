@@ -1,5 +1,7 @@
+#![allow(clippy::cast_possible_wrap)]
+
 use super::Algo;
-use crate::model::*;
+use crate::model::{Assignments, ProjectId, StudentId};
 use crate::{get_config, Config};
 use failure::{bail, Error, ResultExt};
 use pathfinding::prelude::*;
@@ -154,7 +156,7 @@ impl<'a> Hungarian<'a> {
                     assert_eq!(self.assignments.open_spots_for(p)[0], 1);
                     (
                         self.assignments.lazy_students_count_for(p),
-                        -(self.assignments.open_spots_for(p).last().cloned().unwrap() as isize),
+                        -(self.assignments.open_spots_for(p).last().copied().unwrap() as isize),
                         self.total_weight_for(p),
                     )
                 })
@@ -179,7 +181,7 @@ impl<'a> Hungarian<'a> {
         let mut unassigned = self.assignments.unassigned_students();
         let mut new_occurrences = false;
         while !unassigned.is_empty() {
-            match self
+            if let Some(p) = self
                 .assignments
                 .filter_projects(|p| {
                     !self.assignments.is_cancelled(p)
@@ -192,42 +194,40 @@ impl<'a> Hungarian<'a> {
                 .filter(|&p| self.assignments.min_students(p) <= unassigned.len())
                 .min_by_key(|&p| self.assignments.project(p).min_students)
             {
-                Some(p) => {
-                    trace!(
-                        project = %self.assignments.project(p).name,
-                        min_students = %self.assignments.project(p).min_students,
-                        "Opening new {} project",
-                        if new_occurrences {
-                            "occurrence of project"
-                        } else {
-                            "project"
-                        }
-                    );
-                    for _ in 0..unassigned
-                        .len()
-                        .min(self.assignments.project(p).min_students)
-                    {
-                        self.assignments.assign_to(unassigned.pop().unwrap(), p);
+                trace!(
+                    project = %self.assignments.project(p).name,
+                    min_students = %self.assignments.project(p).min_students,
+                    "Opening new {} project",
+                    if new_occurrences {
+                        "occurrence of project"
+                    } else {
+                        "project"
                     }
+                );
+                for _ in 0..unassigned
+                    .len()
+                    .min(self.assignments.project(p).min_students)
+                {
+                    self.assignments.assign_to(unassigned.pop().unwrap(), p);
                 }
-                None => {
+            } else {
+                {
                     if new_occurrences {
                         debug!(
                             unassigned_students = %unassigned.len(),
                             "Cannot find new project to open for unassigned students"
                         );
                         break;
-                    } else {
-                        debug!("Allowing opening of new occurrences");
-                        new_occurrences = true;
                     }
+                    debug!("Allowing opening of new occurrences");
+                    new_occurrences = true;
                 }
             }
         }
     }
 
     /// If it exists, find one of the best unacceptable project occurrence
-    /// to cancel. Or even an acceptable one if including_acceptable is true.
+    /// to cancel. Or even an acceptable one if `including_acceptable` is true.
     fn find_occurrence_to_cancel(&self, including_acceptable: bool) -> Option<ProjectId> {
         self.assignments
             .filter_projects(|p| {
@@ -246,7 +246,7 @@ impl<'a> Hungarian<'a> {
                     .assignments
                     .open_spots_for(p)
                     .get(0)
-                    .cloned()
+                    .copied()
                     .unwrap_or(0);
                 let all_lazy = students.iter().all(|&s| self.assignments.is_lazy(s));
                 (
@@ -319,12 +319,11 @@ impl<'a> Hungarian<'a> {
                 self.assignments.clear_all_assignments();
                 self.assignments.cancel_occurrence(to_cancel);
                 return self.do_assignments();
-            } else {
-                bail!(
-                    "unable to assign a project to {} students",
-                    self.assignments.unassigned_students().len()
-                );
             }
+            bail!(
+                "unable to assign a project to {} students",
+                self.assignments.unassigned_students().len()
+            );
         }
 
         Ok(())

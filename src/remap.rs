@@ -37,7 +37,7 @@ pub fn remap(students: &mut Vec<Student>, projects: &mut Vec<Project>) {
 pub fn separate_lazy(students: Vec<Student>) -> (Vec<Student>, Vec<StudentId>) {
     let mut non_lazy = Vec::new();
     let mut lazy = Vec::new();
-    for student in students.into_iter() {
+    for student in students {
         if student.rankings.is_empty() {
             lazy.push(student.id);
         } else {

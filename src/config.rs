@@ -13,6 +13,7 @@ impl Config {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub fn get_config(config: &Config, section: &str, key: &str) -> Option<String> {
     config
         .conf

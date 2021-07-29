@@ -1,5 +1,5 @@
 use super::loader::Loader;
-use crate::model::*;
+use crate::model::{Project, ProjectId, Student, StudentId};
 use crate::{get_config, Config};
 use failure::{Error, ResultExt};
 use my::params;
@@ -33,14 +33,13 @@ impl MysqlLoader {
     pub fn new(config: &Config) -> Result<MysqlLoader, failure::Error> {
         let host = get_config(config, "mysql", "host");
         let port = get_config(config, "mysql", "port")
-            .map(|p| p.parse::<u16>().context("parsing mysql port"))
-            .unwrap_or(Ok(3306))?;
+            .map_or(Ok(3306), |p| p.parse::<u16>().context("parsing mysql port"))?;
         let user = get_config(config, "mysql", "user");
         let password = get_config(config, "mysql", "password");
         let database = get_config(config, "mysql", "database");
-        let force_tcp = get_config(config, "mysql", "force-tcp")
-            .map(|p| p.parse::<bool>().context("parsing force-tcp"))
-            .unwrap_or(Ok(false))?;
+        let force_tcp = get_config(config, "mysql", "force-tcp").map_or(Ok(false), |p| {
+            p.parse::<bool>().context("parsing force-tcp")
+        })?;
         let opts = my::OptsBuilder::new()
             .ip_or_hostname(host)
             .tcp_port(port)

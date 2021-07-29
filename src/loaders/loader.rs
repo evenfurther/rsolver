@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::model::{Project, ProjectId, Student, StudentId};
 use failure::{bail, Error, ResultExt};
 use tracing::trace;
 

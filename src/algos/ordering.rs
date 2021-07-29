@@ -1,5 +1,7 @@
+#![allow(clippy::cast_possible_wrap)]
+
 use super::Algo;
-use crate::model::*;
+use crate::model::Assignments;
 use failure::Error;
 use rand::prelude::*;
 use tracing::info;
@@ -44,7 +46,7 @@ impl<'a> Ordering<'a> {
             .into_iter()
             .flat_map(|p| self.assignments.students_for(p))
             .filter(|&s| !self.assignments.is_currently_pinned(*s))
-            .cloned()
+            .copied()
             .collect::<Vec<_>>();
         info!(number = %overflowing_students.len(), "Potential students to move");
         overflowing_students.shuffle(&mut self.rng);

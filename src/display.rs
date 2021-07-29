@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 use crate::model::{Assignments, StudentId};
 use crate::stats;
 use failure::Error;
@@ -24,14 +26,14 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
             .collect::<Vec<_>>();
         students.sort_by_key(|(name, _)| name.clone());
         if !students.is_empty() {
-            if a.max_occurrences(p) != 1 {
+            if a.max_occurrences(p) == 1 {
+                println!("{}:", a.project(p).name);
+            } else {
                 println!(
                     "{} ({} occurrences):",
                     a.project(p).name,
                     a.max_occurrences(p)
                 );
-            } else {
-                println!("{}:", a.project(p).name);
             }
             for (name, s) in students {
                 print!("  - {}", name);
@@ -48,6 +50,7 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
     }
 }
 
+#[allow(clippy::cast_precision_loss)]
 pub fn display_stats(a: &Assignments, eliminated: usize) {
     let students = a.all_students().len();
     let lazy = (0..students)
