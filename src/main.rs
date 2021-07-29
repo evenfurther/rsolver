@@ -63,7 +63,7 @@ fn main() -> Result<(), Error> {
         match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
             "mysql" => Box::new(MysqlLoader::new(&config)?),
             #[cfg(feature = "sqlite")]
-            "sqlite" => Box::new(SqliteLoader::new(&config)?),
+            "sqlite" => Box::new(crate::loaders::SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
     // Load data from the database

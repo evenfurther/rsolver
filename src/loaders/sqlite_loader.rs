@@ -1,7 +1,7 @@
 #![cfg(feature = "sqlite")]
 
 use super::loader::Loader;
-use crate::model::*;
+use crate::model::{Project, ProjectId, Student, StudentId};
 use crate::{get_config, Config};
 use failure::{format_err, Error, ResultExt};
 use rusqlite::Connection;
@@ -95,7 +95,7 @@ impl Loader for SqliteLoader {
             self.conn
                 .execute(
                     "UPDATE eleves SET attribution=?1 WHERE id=?2",
-                    [p.0 as u32, s.0 as u32],
+                    [p.0, s.0],
                 )
                 .context("cannot save attributions")?;
         }
@@ -103,7 +103,7 @@ impl Loader for SqliteLoader {
             self.conn
                 .execute(
                     "UPDATE eleves SET attribution=NULL WHERE id=?1",
-                    [s.0 as u32],
+                    [s.0],
                 )
                 .context("cannot delete attribution for unassigned student")?;
         }
