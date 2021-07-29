@@ -93,18 +93,12 @@ impl Loader for SqliteLoader {
     ) -> Result<(), Error> {
         for (s, p) in assignments {
             self.conn
-                .execute(
-                    "UPDATE eleves SET attribution=?1 WHERE id=?2",
-                    [p.0, s.0],
-                )
+                .execute("UPDATE eleves SET attribution=?1 WHERE id=?2", [p.0, s.0])
                 .context("cannot save attributions")?;
         }
         for s in unassigned {
             self.conn
-                .execute(
-                    "UPDATE eleves SET attribution=NULL WHERE id=?1",
-                    [s.0],
-                )
+                .execute("UPDATE eleves SET attribution=NULL WHERE id=?1", [s.0])
                 .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())

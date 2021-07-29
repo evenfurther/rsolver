@@ -1,6 +1,5 @@
 use crate::algos::{Algo, Hungarian, Ordering};
 use crate::config::{get_config, Config};
-use crate::loaders::{Loader, MysqlLoader};
 use crate::model::{Assignments, Project, Student};
 use clap::{crate_authors, crate_version, App};
 use failure::{bail, ensure, Error};
@@ -59,11 +58,11 @@ fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::fmt().with_max_level(level).init();
     let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
     let dry_run = matches.is_present("dry_run");
-    let mut loader: Box<dyn Loader> =
+    let mut loader: Box<dyn loaders::Loader> =
         match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => Box::new(MysqlLoader::new(&config)?),
+            "mysql" => Box::new(loaders::MysqlLoader::new(&config)?),
             #[cfg(feature = "sqlite")]
-            "sqlite" => Box::new(crate::loaders::SqliteLoader::new(&config)?),
+            "sqlite" => Box::new(loaders::SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
     // Load data from the database
