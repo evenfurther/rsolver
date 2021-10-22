@@ -2,7 +2,7 @@
 name = "rsolver"
 version = "1.0.0"
 authors = ["Samuel Tardieu <sam@rfc1149.net>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 clap = "2.33.0"
