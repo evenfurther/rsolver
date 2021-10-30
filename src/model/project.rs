@@ -7,13 +7,13 @@ pub struct ProjectId(pub usize);
 pub struct Project {
     pub id: ProjectId,
     pub name: String,
-    pub min_students: usize,
-    pub max_students: usize,
-    pub max_occurrences: usize,
+    pub min_students: u32,
+    pub max_students: u32,
+    pub max_occurrences: u32,
 }
 
 impl Project {
-    pub fn can_host(&self, occ: usize) -> Vec<usize> {
+    pub fn can_host(&self, occ: u32) -> Vec<u32> {
         assert!(occ <= self.max_occurrences);
         if occ == 1 || self.min_students * 2 <= self.max_students {
             (self.min_students..=self.max_students * occ).collect()
@@ -28,7 +28,7 @@ impl Project {
         }
     }
 
-    pub fn acceptable(&self, occ: usize, n: usize) -> bool {
+    pub fn acceptable(&self, occ: u32, n: u32) -> bool {
         assert!(occ <= self.max_occurrences);
         (1..=occ).any(|occ| n >= occ * self.min_students && n <= occ * self.max_students)
     }

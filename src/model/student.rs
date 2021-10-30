@@ -13,7 +13,7 @@ pub struct Student {
     pub last_name: String,
     pub name: String,
     pub rankings: Vec<ProjectId>,
-    pub bonuses: HashMap<ProjectId, isize>,
+    pub bonuses: HashMap<ProjectId, i64>,
 }
 
 impl Student {
@@ -22,7 +22,7 @@ impl Student {
         first_name: String,
         last_name: String,
         rankings: Vec<ProjectId>,
-        bonuses: HashMap<ProjectId, isize>,
+        bonuses: HashMap<ProjectId, i64>,
     ) -> Student {
         let name = format!("{} {}", first_name, last_name);
         Student {

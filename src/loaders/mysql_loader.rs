@@ -1,127 +1,123 @@
 use super::loader::Loader;
 use crate::model::{Project, ProjectId, Student, StudentId};
 use crate::{get_config, Config};
+use async_trait::async_trait;
 use failure::{Error, ResultExt};
-use my::params;
-use my::prelude::*;
-use mysql as my;
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
+use sqlx::{MySql, Pool};
 use std::collections::HashMap;
 
 pub struct MysqlLoader {
-    pool: my::Pool,
-}
-
-macro_rules! load {
-    ($name:ident, $query:expr, $ty:ty, $pattern:pat, $value:expr) => {
-        fn $name(&self) -> Result<Vec<$ty>, failure::Error> {
-            Ok($query.run(&self.pool).and_then(|result| {
-                result
-                    .into_iter()
-                    .map(|row| {
-                        row.map(|row| {
-                            let $pattern = my::from_row(row);
-                            $value
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            })?)
-        }
-    };
+    pool: Pool<MySql>,
 }
 
 impl MysqlLoader {
-    pub fn new(config: &Config) -> Result<MysqlLoader, failure::Error> {
-        let host = get_config(config, "mysql", "host");
+    pub async fn new(config: &Config) -> Result<MysqlLoader, failure::Error> {
+        let host = get_config(config, "mysql", "host").unwrap_or_else(|| String::from("localhost"));
         let port = get_config(config, "mysql", "port")
             .map_or(Ok(3306), |p| p.parse::<u16>().context("parsing mysql port"))?;
-        let user = get_config(config, "mysql", "user");
+        let user = get_config(config, "mysql", "user").expect("missing user");
         let password = get_config(config, "mysql", "password");
-        let database = get_config(config, "mysql", "database");
-        let force_tcp = get_config(config, "mysql", "force-tcp").map_or(Ok(false), |p| {
-            p.parse::<bool>().context("parsing force-tcp")
-        })?;
-        let opts = my::OptsBuilder::new()
-            .ip_or_hostname(host)
-            .tcp_port(port)
-            .prefer_socket(!force_tcp)
-            .user(user)
-            .pass(password)
-            .db_name(database);
-        Ok(my::Pool::new(opts)
-            .context("mysql connection")
-            .map(|pool| MysqlLoader { pool })?)
+        let database = get_config(config, "mysql", "database").expect("missing database");
+        let mut options = MySqlConnectOptions::new()
+            .database(&database)
+            .username(&user)
+            .host(&host)
+            .port(port);
+        if let Some(password) = password {
+            options = options.password(&password);
+        }
+        Ok(MysqlLoader {
+            pool: MySqlPoolOptions::new().connect_with(options).await?,
+        })
     }
 }
 
+#[async_trait]
 impl Loader for MysqlLoader {
-    load!(
-        load_projects,
-        "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
-        Project,
-        (id, name, min_students, max_students, max_occurrences),
-        Project {
-            id: ProjectId(id),
-            name,
-            min_students,
-            max_students,
-            max_occurrences,
-        }
-    );
+    async fn load_projects(&self) -> Result<Vec<Project>, failure::Error> {
+        sqlx::query!("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")
+            .map(|row| {
+                Ok(Project {
+                    id: ProjectId(row.id as usize),
+                    name: row.intitule,
+                    min_students: row.quota_min as u32,
+                    max_students: row.quota_max as u32,
+                    max_occurrences: row.occurrences as u32,
+                })
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_students,
-        "SELECT id, prenom, nom FROM eleves",
-        Student,
-        (id, first_name, last_name),
-        Student::new(
-            StudentId(id),
-            first_name,
-            last_name,
-            Vec::new(),
-            HashMap::new()
-        )
-    );
+    async fn load_students(&self) -> Result<Vec<Student>, failure::Error> {
+        sqlx::query!("SELECT id, prenom, nom FROM eleves")
+            .map(|row| {
+                Ok(Student::new(
+                    StudentId(row.id as usize),
+                    row.prenom,
+                    row.nom,
+                    Vec::new(),
+                    HashMap::new(),
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_bonuses,
-        "SELECT eleve_id, projet_id, poids FROM pref_override",
-        (StudentId, ProjectId, isize),
-        (student_id, project_id, weight),
-        (StudentId(student_id), ProjectId(project_id), weight)
-    );
+    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, failure::Error> {
+        sqlx::query!("SELECT eleve_id, projet_id, poids FROM pref_override")
+            .map(|row| {
+                Ok((
+                    StudentId(row.eleve_id as usize),
+                    ProjectId(row.projet_id as usize),
+                    row.poids as i64,
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_preferences,
-        "SELECT eleve_id, projet_id, poids FROM preferences",
-        (StudentId, ProjectId, isize),
-        (student_id, project_id, weight),
-        (StudentId(student_id), ProjectId(project_id), weight)
-    );
+    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, failure::Error> {
+        sqlx::query!("SELECT eleve_id, projet_id, poids FROM preferences")
+            .map(|row| {
+                Ok((
+                    StudentId(row.eleve_id as usize),
+                    ProjectId(row.projet_id as usize),
+                    row.poids as i64,
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    fn save_assignments(
+    async fn save_assignments(
         &self,
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
     ) -> Result<(), Error> {
-        let mut conn = self.pool.get_conn()?;
-        let stmt = conn
-            .prep("UPDATE eleves SET attribution=:attribution WHERE id=:id")
-            .context("cannot prepare statement")?;
         for (s, p) in assignments {
-            conn.exec_drop(
-                stmt.clone(),
-                params! {
-                    "id" => s.0,
-                    "attribution" => p.0,
-                },
+            sqlx::query!(
+                "UPDATE eleves SET attribution=? WHERE id=?",
+                p.0 as i32,
+                s.0 as u32
             )
+            .execute(&self.pool)
+            .await
             .context("cannot save attributions")?;
         }
-        let stmt = conn
-            .prep("UPDATE eleves SET attribution=NULL WHERE id=:id")
-            .context("cannot prepare statement")?;
         for s in unassigned {
-            conn.exec_drop(stmt.clone(), params! { "id" => s.0 })
+            sqlx::query!("UPDATE eleves SET attribution=NULL WHERE id=?", s.0 as u32)
+                .execute(&self.pool)
+                .await
                 .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())

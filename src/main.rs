@@ -33,7 +33,8 @@ fn assign(
     Ok(assignments)
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let matches = App::new("rsolver")
         .about("Automatically assign projects to students")
         .author(crate_authors!())
@@ -60,13 +61,13 @@ fn main() -> Result<(), Error> {
     let dry_run = matches.is_present("dry_run");
     let mut loader: Box<dyn loaders::Loader> =
         match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => Box::new(loaders::MysqlLoader::new(&config)?),
+            "mysql" => Box::new(loaders::MysqlLoader::new(&config).await?),
             #[cfg(feature = "sqlite")]
             "sqlite" => Box::new(loaders::SqliteLoader::new(&config)?),
             other => bail!("unknown loader: {}", other),
         };
     // Load data from the database
-    let (original_students, original_projects) = loader.load()?;
+    let (original_students, original_projects) = loader.load().await?;
     // Isolate lazy students before remapping if asked to do so
     let (original_students, lazy_students) = if matches.is_present("drop-unregistered") {
         remap::separate_lazy(original_students)
@@ -104,7 +105,9 @@ fn main() -> Result<(), Error> {
             })
             .collect::<Vec<_>>();
         // Save the assignments and non-assignments into the database
-        loader.save_assignments(&assignments, &unassigned_students)?;
+        loader
+            .save_assignments(&assignments, &unassigned_students)
+            .await?;
     }
     // If CSV output is requested, only output assignments
     if matches.is_present("csv") {

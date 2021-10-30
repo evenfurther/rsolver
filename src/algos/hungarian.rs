@@ -12,14 +12,14 @@ use tracing::{debug, info, trace};
 
 pub struct Hungarian<'a> {
     assignments: &'a mut Assignments,
-    weights: Matrix<isize>,
+    weights: Matrix<i64>,
 }
 
 impl<'a> Hungarian<'a> {
     pub fn new(assignments: &'a mut Assignments, config: &Config) -> Result<Hungarian<'a>, Error> {
         let rank_mult = get_config(config, "hungarian", "rank_mult")
             .unwrap_or_else(|| "3".to_owned())
-            .parse::<isize>()
+            .parse::<i64>()
             .context("cannot parse hungarian.rank_mult configuration parameter")?;
         let rank_pow = get_config(config, "hungarian", "rank_pow")
             .unwrap_or_else(|| "4".to_owned())
@@ -33,16 +33,19 @@ impl<'a> Hungarian<'a> {
     }
 
     /// Compute the weights indexed by student then by project (less is better).
-    fn compute_weights(a: &Assignments, rank_mult: isize, rank_pow: u32) -> Matrix<isize> {
-        let slen = a.all_students().len() as isize;
+    fn compute_weights(a: &Assignments, rank_mult: i64, rank_pow: u32) -> Matrix<i64> {
+        let slen = a.all_students().len() as i64;
         let mut seats = Vec::new();
         let mut seats_for = HashMap::new();
         for p in a.all_projects() {
             let n = a.max_students(p) * a.max_occurrences(p);
-            seats_for.insert(p, (seats.len()..seats.len() + n).collect::<Vec<_>>());
-            seats.extend(iter::repeat(p).take(n));
+            seats_for.insert(
+                p,
+                (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
+            );
+            seats.extend(iter::repeat(p).take(n as usize));
         }
-        let large = isize::MAX / (1 + slen);
+        let large = i64::MAX / (1 + slen);
         let unregistered = large / (1 + slen);
         let mut weights = Matrix::new(a.all_students().len(), a.all_projects().len(), unregistered);
         for s in a.all_students() {
@@ -51,7 +54,7 @@ impl<'a> Hungarian<'a> {
                     weights[&(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
                         -large
                     } else {
-                        (rank as isize * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
+                        (rank as i64 * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
                     };
                 }
             }
@@ -60,17 +63,17 @@ impl<'a> Hungarian<'a> {
     }
 
     /// Return the weight for a student and a project.
-    fn weight_of(&self, StudentId(student): StudentId, ProjectId(project): ProjectId) -> isize {
+    fn weight_of(&self, StudentId(student): StudentId, ProjectId(project): ProjectId) -> i64 {
         self.weights[&(student, project)]
     }
 
     /// Return the some of weights of students registered on a project.
-    fn total_weight_for(&self, project: ProjectId) -> isize {
+    fn total_weight_for(&self, project: ProjectId) -> i64 {
         self.assignments
             .students_for(project)
             .iter()
             .map(|&s| self.weight_of(s, project))
-            .sum::<isize>()
+            .sum::<i64>()
     }
 
     /// Assign every student to a project. There must be enough seats for every
@@ -81,17 +84,20 @@ impl<'a> Hungarian<'a> {
         let mut seats_for = HashMap::new();
         for p in self.assignments.all_projects() {
             let n = self.assignments.max_students(p) * self.assignments.max_occurrences(p);
-            seats_for.insert(p, (seats.len()..seats.len() + n).collect::<Vec<_>>());
-            seats.extend(iter::repeat(p).take(n));
+            seats_for.insert(
+                p,
+                (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
+            );
+            seats.extend(iter::repeat(p).take(n as usize));
         }
-        let large = isize::MAX / (1 + slen as isize);
+        let large = i64::MAX / (1 + slen as i64);
         let mut prefs = Matrix::new(slen, seats.len(), large);
         for s in self.assignments.all_students() {
             for p in self.assignments.all_projects() {
                 if !self.assignments.is_cancelled(p) {
                     let score = self.weight_of(s, p);
                     for n in &seats_for[&p] {
-                        prefs[&(s.0, *n)] = score;
+                        prefs[&(s.0, *n as usize)] = score;
                     }
                 }
             }
@@ -119,7 +125,7 @@ impl<'a> Hungarian<'a> {
                 return;
             }
             let missing = self.assignments.open_spots_for(p)[0];
-            if missing > unassigned.len() {
+            if missing > unassigned.len() as u32 {
                 debug!(
                     unassigned_students = %unassigned.len(),
                     necessary_students = %missing,
@@ -191,7 +197,7 @@ impl<'a> Hungarian<'a> {
                                     < self.assignments.max_occurrences(p)))
                 })
                 .into_iter()
-                .filter(|&p| self.assignments.min_students(p) <= unassigned.len())
+                .filter(|&p| self.assignments.min_students(p) <= unassigned.len() as u32)
                 .min_by_key(|&p| self.assignments.project(p).min_students)
             {
                 trace!(
@@ -206,7 +212,7 @@ impl<'a> Hungarian<'a> {
                 );
                 for _ in 0..unassigned
                     .len()
-                    .min(self.assignments.project(p).min_students)
+                    .min(self.assignments.project(p).min_students as usize)
                 {
                     self.assignments.assign_to(unassigned.pop().unwrap(), p);
                 }

@@ -1,0 +1,253 @@
+{
+  "db": "MySQL",
+  "11915bba45a95ca1da5a51bc6ff3eab08a995f887a0549071660a18cde43c7aa": {
+    "query": "SELECT eleve_id, projet_id, poids FROM pref_override",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "eleve_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "projet_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "poids",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "1689a83bc6252a1543b5207381667c7d3912b9fe5e9bc160cd929430a695fa30": {
+    "query": "UPDATE eleves SET attribution=NULL WHERE id=?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
+  "4d100a85c3f27121a123c1a4e39dc6fda3f433084cda68eb7b3c621fb2981de1": {
+    "query": "UPDATE eleves SET attribution=? WHERE id=?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "72ca62f153b8cb6fb619ae6d5448329f8efea9f1819fb7f2bbc6380f7ed671b5": {
+    "query": "SELECT id, prenom, nom FROM eleves",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 611
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "prenom",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "nom",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "88355a16fbac8a63e7ac4ea0b74731c057ea1fce859437846061546b529895c7": {
+    "query": "SELECT eleve_id, projet_id, poids FROM preferences",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "eleve_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 97
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "projet_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 97
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "poids",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "ced5bef32a4f7d61cc050c73bbaa7e56f18acaa6924553dda7015c8dc4b547c8": {
+    "query": "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4131
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "intitule",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "quota_min",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "quota_max",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "occurrences",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  }
+}

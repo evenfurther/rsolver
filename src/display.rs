@@ -78,7 +78,7 @@ pub fn display_stats(a: &Assignments, eliminated: usize) {
         a.filter_projects(|p| a.is_open(p))
             .into_iter()
             .map(|p| a.max_occurrences(p))
-            .sum::<usize>()
+            .sum::<u32>()
     );
     let ranks = stats::statistics(a);
     let cumul = ranks.iter().scan(0, |s, &r| {

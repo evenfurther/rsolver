@@ -2,13 +2,13 @@ use super::{Project, ProjectId, Student, StudentId};
 use failure::{ensure, Error};
 use std::collections::HashMap;
 
-const PINNING_BONUS: isize = 1000;
+const PINNING_BONUS: i64 = 1000;
 
 #[derive(Debug)]
 pub struct Assignments {
     students: Vec<Student>,
     projects: Vec<Project>,
-    max_occurrences: Vec<usize>,
+    max_occurrences: Vec<u32>,
     assigned_to: Vec<Option<ProjectId>>,
     assigned: Vec<Vec<StudentId>>,
     pinned: Vec<Vec<StudentId>>,
@@ -85,11 +85,11 @@ impl Assignments {
         &self.student(student).rankings
     }
 
-    pub fn bonuses(&self, student: StudentId) -> &HashMap<ProjectId, isize> {
+    pub fn bonuses(&self, student: StudentId) -> &HashMap<ProjectId, i64> {
         &self.student(student).bonuses
     }
 
-    pub fn bonus(&self, student: StudentId, project: ProjectId) -> Option<isize> {
+    pub fn bonus(&self, student: StudentId, project: ProjectId) -> Option<i64> {
         self.bonuses(student).get(&project).copied()
     }
 
@@ -237,12 +237,12 @@ impl Assignments {
         self.max_occurrences[project] == 0
     }
 
-    pub fn current_occurrences(&self, project: ProjectId) -> usize {
+    pub fn current_occurrences(&self, project: ProjectId) -> u32 {
         let max = self.max_students(project);
-        (self.students_for(project).len() + max - 1) / max
+        (self.students_for(project).len() as u32 + max - 1) / max
     }
 
-    pub fn max_occurrences(&self, ProjectId(project): ProjectId) -> usize {
+    pub fn max_occurrences(&self, ProjectId(project): ProjectId) -> u32 {
         self.max_occurrences[project]
     }
 
@@ -250,19 +250,19 @@ impl Assignments {
         !self.is_cancelled(project) && !self.students_for(project).is_empty()
     }
 
-    pub fn size(&self, project: ProjectId) -> usize {
-        self.students_for(project).len()
+    pub fn size(&self, project: ProjectId) -> u32 {
+        self.students_for(project).len() as u32
     }
 
-    pub fn min_students(&self, project: ProjectId) -> usize {
+    pub fn min_students(&self, project: ProjectId) -> u32 {
         self.project(project).min_students
     }
 
-    pub fn max_students(&self, project: ProjectId) -> usize {
+    pub fn max_students(&self, project: ProjectId) -> u32 {
         self.project(project).max_students
     }
 
-    pub fn max_capacity(&self, project: ProjectId) -> usize {
+    pub fn max_capacity(&self, project: ProjectId) -> u32 {
         self.max_students(project) * self.max_occurrences(project)
     }
 
@@ -278,11 +278,11 @@ impl Assignments {
         self.is_open(project) && self.size(project) < self.project(project).min_students
     }
 
-    pub fn missing(&self, project: ProjectId) -> usize {
+    pub fn missing(&self, project: ProjectId) -> u32 {
         self.min_students(project) - self.size(project)
     }
 
-    pub fn is_acceptable_for(&self, project: ProjectId, n: usize) -> bool {
+    pub fn is_acceptable_for(&self, project: ProjectId, n: u32) -> bool {
         assert!(
             !self.is_cancelled(project),
             "a cancelled project cannot be acceptable"
@@ -292,15 +292,15 @@ impl Assignments {
     }
 
     pub fn is_acceptable(&self, project: ProjectId) -> bool {
-        self.is_acceptable_for(project, self.students_for(project).len())
+        self.is_acceptable_for(project, self.students_for(project).len() as u32)
     }
 
-    pub fn open_spots_for(&self, project: ProjectId) -> Vec<usize> {
+    pub fn open_spots_for(&self, project: ProjectId) -> Vec<u32> {
         assert!(
             !self.is_cancelled(project),
             "a cancelled project cannot host anything"
         );
-        let students = self.students_for(project).len();
+        let students = self.students_for(project).len() as u32;
         self.project(project)
             .can_host(self.max_occurrences(project))
             .into_iter()
@@ -320,12 +320,12 @@ impl Assignments {
             .all_projects()
             .into_iter()
             .map(|p| self.max_capacity(p))
-            .sum::<usize>();
+            .sum::<u32>();
         let students = if exclude_lazy {
             self.students.iter().filter(|s| !s.is_lazy()).count()
         } else {
             self.students.len()
-        };
+        } as u32;
         ensure!(
             seats >= students,
             "insufficient number of open projects, can host {} {}students out of {}",

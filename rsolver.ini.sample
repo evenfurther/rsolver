@@ -7,5 +7,3 @@ host = localhost
 user = rsolver
 password = rsolver
 database = rsolver
-# Set to true to force TCP connection even on localhost
-force-tcp = false

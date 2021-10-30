@@ -1,29 +1,34 @@
 use crate::model::{Project, ProjectId, Student, StudentId};
+use async_trait::async_trait;
 use failure::{bail, Error, ResultExt};
 use tracing::trace;
 
-pub trait Loader {
-    fn load_projects(&self) -> Result<Vec<Project>, Error> {
+#[async_trait]
+pub trait Loader: Send + Sync {
+    async fn load_projects(&self) -> Result<Vec<Project>, Error> {
         bail!("implementation needed")
     }
 
-    fn load_students(&self) -> Result<Vec<Student>, Error> {
+    async fn load_students(&self) -> Result<Vec<Student>, Error> {
         bail!("implementation needed")
     }
 
-    fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, isize)>, Error> {
+    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         bail!("implementation needed")
     }
 
-    fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, isize)>, Error> {
+    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         bail!("implementation needed")
     }
 
-    fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
-        let projects = self.load_projects().context("cannot load projects")?;
-        let mut students = self.load_students().context("cannot load students")?;
-        let preferences = self.load_preferences().context("cannot load rankings")?;
-        let bonuses = self.load_bonuses().context("cannot load bonuses")?;
+    async fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
+        let projects = self.load_projects().await.context("cannot load projects")?;
+        let mut students = self.load_students().await.context("cannot load students")?;
+        let preferences = self
+            .load_preferences()
+            .await
+            .context("cannot load rankings")?;
+        let bonuses = self.load_bonuses().await.context("cannot load bonuses")?;
         for student in &mut students {
             let mut preferences = preferences
                 .iter()
@@ -45,7 +50,7 @@ pub trait Loader {
         Ok((students, projects))
     }
 
-    fn save_assignments(
+    async fn save_assignments(
         &self,
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
