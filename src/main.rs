@@ -63,7 +63,7 @@ async fn main() -> Result<(), Error> {
         match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
             "mysql" => Box::new(loaders::MysqlLoader::new(&config).await?),
             #[cfg(feature = "sqlite")]
-            "sqlite" => Box::new(loaders::SqliteLoader::new(&config)?),
+            "sqlite" => Box::new(loaders::SqliteLoader::new(&config).await?),
             other => bail!("unknown loader: {}", other),
         };
     // Load data from the database

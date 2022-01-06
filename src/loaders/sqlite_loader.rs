@@ -3,102 +3,111 @@
 use super::loader::Loader;
 use crate::model::{Project, ProjectId, Student, StudentId};
 use crate::{get_config, Config};
-use failure::{format_err, Error, ResultExt};
-use rusqlite::Connection;
+use anyhow::{format_err, Context, Error};
+use async_trait::async_trait;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions, SqliteRow};
+use sqlx::{Pool, Row, Sqlite};
 use std::collections::HashMap;
 
 pub struct SqliteLoader {
-    conn: Connection,
-}
-
-macro_rules! load {
-    ($name:ident, $query:expr, $ty:ty, $row:ident, $value:expr) => {
-        fn $name(&self) -> Result<Vec<$ty>, Error> {
-            let mut stmt = self.conn.prepare($query)?;
-            let result = stmt
-                .query_map([], |$row| Ok($value))?
-                .collect::<Result<Vec<_>, _>>();
-            Ok(result?)
-        }
-    };
+    pool: Pool<Sqlite>,
 }
 
 impl SqliteLoader {
-    pub fn new(config: &Config) -> Result<SqliteLoader, Error> {
+    pub async fn new(config: &Config) -> Result<SqliteLoader, Error> {
         let filename = get_config(config, "sqlite", "file")
             .ok_or_else(|| format_err!("cannot find sqlite file"))?;
+        let options = SqliteConnectOptions::new().filename(filename);
         Ok(SqliteLoader {
-            conn: Connection::open(filename)?,
+            pool: SqlitePoolOptions::new().connect_with(options).await?,
         })
     }
 }
 
+#[async_trait]
 impl Loader for SqliteLoader {
-    load!(
-        load_projects,
-        "SELECT id, intitule, quota_min, quota_max, occurrences FROM projets",
-        Project,
-        row,
-        Project {
-            id: ProjectId(row.get::<_, u32>(0)? as usize),
-            name: row.get(1)?,
-            min_students: row.get::<_, u32>(2)? as usize,
-            max_students: row.get::<_, u32>(3)? as usize,
-            max_occurrences: row.get::<_, u32>(4)? as usize,
-        }
-    );
+    async fn load_projects(&self) -> Result<Vec<Project>, Error> {
+        sqlx::query("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")
+            .map(|row: SqliteRow| {
+                Ok(Project {
+                    id: ProjectId(row.get::<u32, _>("id") as usize),
+                    name: row.get("intitule"),
+                    min_students: row.get("quota_min"),
+                    max_students: row.get("quota_max"),
+                    max_occurrences: row.get("ocurrences"),
+                })
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_students,
-        "SELECT id, prenom, nom FROM eleves",
-        Student,
-        row,
-        Student::new(
-            StudentId(row.get::<_, u32>(0)? as usize),
-            row.get(1)?,
-            row.get(2)?,
-            Vec::new(),
-            HashMap::new()
-        )
-    );
+    async fn load_students(&self) -> Result<Vec<Student>, Error> {
+        sqlx::query("SELECT id, prenom, nom FROM eleves")
+            .map(|row: SqliteRow| {
+                Ok(Student::new(
+                    StudentId(row.get::<u32, _>("id") as usize),
+                    row.get("prenom"),
+                    row.get("nom"),
+                    Vec::new(),
+                    HashMap::new(),
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_bonuses,
-        "SELECT eleve_id, projet_id, poids FROM pref_override",
-        (StudentId, ProjectId, isize),
-        row,
-        (
-            StudentId(row.get::<_, u32>(0)? as usize),
-            ProjectId(row.get::<_, u32>(1)? as usize),
-            row.get::<_, i32>(2)? as isize,
-        )
-    );
+    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+        sqlx::query("SELECT eleve_id, projet_id, poids FROM pref_override")
+            .map(|row: SqliteRow| {
+                Ok((
+                    StudentId(row.get::<u32, _>("eleve_id") as usize),
+                    ProjectId(row.get::<u32, _>("projet_id") as usize),
+                    row.get("poids"),
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    load!(
-        load_preferences,
-        "SELECT eleve_id, projet_id, poids FROM preferences",
-        (StudentId, ProjectId, isize),
-        row,
-        (
-            StudentId(row.get::<_, u32>(0)? as usize),
-            ProjectId(row.get::<_, u32>(1)? as usize),
-            row.get::<_, i32>(2)? as isize,
-        )
-    );
+    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+        sqlx::query("SELECT eleve_id, projet_id, poids FROM preferences")
+            .map(|row: SqliteRow| {
+                Ok((
+                    StudentId(row.get::<u32, _>("eleve_id") as usize),
+                    ProjectId(row.get::<u32, _>("projet_id") as usize),
+                    row.get("poids"),
+                ))
+            })
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .collect()
+    }
 
-    fn save_assignments(
+    async fn save_assignments(
         &self,
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
     ) -> Result<(), Error> {
         for (s, p) in assignments {
-            self.conn
-                .execute("UPDATE eleves SET attribution=?1 WHERE id=?2", [p.0, s.0])
+            sqlx::query("UPDATE eleves SET attribution=? WHERE id=?")
+                .bind(p.0 as u32)
+                .bind(s.0 as u32)
+                .execute(&self.pool)
+                .await
                 .context("cannot save attributions")?;
         }
         for s in unassigned {
-            self.conn
-                .execute("UPDATE eleves SET attribution=NULL WHERE id=?1", [s.0])
+            sqlx::query("UPDATE eleves SET attribution=NULL WHERE id=?")
+                .bind(s.0 as u32)
+                .execute(&self.pool)
+                .await
                 .context("cannot delete attribution for unassigned student")?;
         }
         Ok(())
