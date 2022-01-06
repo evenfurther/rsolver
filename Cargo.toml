@@ -5,10 +5,10 @@ authors = ["Samuel Tardieu <sam@rfc1149.net>"]
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.52"
 async-trait = "0.1.51"
 clap = "2.33.0"
 csv = "1.1.1"
-failure = "0.1.5"
 pathfinding = "2.2.0"
 rand = "0.8.3"
 rusqlite = { version = "0.26", optional = true }

@@ -1,5 +1,5 @@
 use super::{Project, ProjectId, Student, StudentId};
-use failure::{ensure, Error};
+use anyhow::{ensure, Error};
 use std::collections::HashMap;
 
 const PINNING_BONUS: i64 = 1000;

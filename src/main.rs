@@ -1,8 +1,8 @@
 use crate::algos::{Algo, Hungarian, Ordering};
 use crate::config::{get_config, Config};
 use crate::model::{Assignments, Project, Student};
+use anyhow::{bail, ensure, Error};
 use clap::{crate_authors, crate_version, App};
-use failure::{bail, ensure, Error};
 use tracing::Level;
 
 mod algos;

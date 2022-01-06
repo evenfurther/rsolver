@@ -1,4 +1,4 @@
-use failure::{Error, ResultExt};
+use anyhow::{Context, Error};
 use ini::Ini;
 
 pub struct Config {

@@ -1,8 +1,8 @@
 use super::loader::Loader;
 use crate::model::{Project, ProjectId, Student, StudentId};
 use crate::{get_config, Config};
+use anyhow::{Context, Error};
 use async_trait::async_trait;
-use failure::{Error, ResultExt};
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::{MySql, Pool};
 use std::collections::HashMap;
@@ -12,7 +12,7 @@ pub struct MysqlLoader {
 }
 
 impl MysqlLoader {
-    pub async fn new(config: &Config) -> Result<MysqlLoader, failure::Error> {
+    pub async fn new(config: &Config) -> Result<MysqlLoader, Error> {
         let host = get_config(config, "mysql", "host").unwrap_or_else(|| String::from("localhost"));
         let port = get_config(config, "mysql", "port")
             .map_or(Ok(3306), |p| p.parse::<u16>().context("parsing mysql port"))?;
@@ -35,7 +35,7 @@ impl MysqlLoader {
 
 #[async_trait]
 impl Loader for MysqlLoader {
-    async fn load_projects(&self) -> Result<Vec<Project>, failure::Error> {
+    async fn load_projects(&self) -> Result<Vec<Project>, Error> {
         sqlx::query!("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")
             .map(|row| {
                 Ok(Project {
@@ -52,7 +52,7 @@ impl Loader for MysqlLoader {
             .collect()
     }
 
-    async fn load_students(&self) -> Result<Vec<Student>, failure::Error> {
+    async fn load_students(&self) -> Result<Vec<Student>, Error> {
         sqlx::query!("SELECT id, prenom, nom FROM eleves")
             .map(|row| {
                 Ok(Student::new(
@@ -69,7 +69,7 @@ impl Loader for MysqlLoader {
             .collect()
     }
 
-    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, failure::Error> {
+    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         sqlx::query!("SELECT eleve_id, projet_id, poids FROM pref_override")
             .map(|row| {
                 Ok((
@@ -84,7 +84,7 @@ impl Loader for MysqlLoader {
             .collect()
     }
 
-    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, failure::Error> {
+    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         sqlx::query!("SELECT eleve_id, projet_id, poids FROM preferences")
             .map(|row| {
                 Ok((

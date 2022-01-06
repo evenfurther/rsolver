@@ -2,7 +2,7 @@
 
 use super::Algo;
 use crate::model::Assignments;
-use failure::Error;
+use anyhow::Error;
 use rand::prelude::*;
 use tracing::info;
 

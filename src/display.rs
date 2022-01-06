@@ -2,7 +2,7 @@
 
 use crate::model::{Assignments, StudentId};
 use crate::stats;
-use failure::Error;
+use anyhow::Error;
 
 pub fn display_details(a: &Assignments, rename_lazy: bool) {
     let mut projects = a.filter_projects(|p| a.is_open(p));

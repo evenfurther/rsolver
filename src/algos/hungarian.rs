@@ -3,7 +3,7 @@
 use super::Algo;
 use crate::model::{Assignments, ProjectId, StudentId};
 use crate::{get_config, Config};
-use failure::{bail, Error, ResultExt};
+use anyhow::{bail, Context, Error};
 use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;

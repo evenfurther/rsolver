@@ -1,7 +1,6 @@
 use crate::model::Assignments;
-use failure::Error;
 
 pub trait Algo {
-    fn assign(&mut self) -> Result<(), Error>;
+    fn assign(&mut self) -> Result<(), anyhow::Error>;
     fn get_assignments(&self) -> &Assignments;
 }

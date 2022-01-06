@@ -1,6 +1,6 @@
 use crate::model::{Project, ProjectId, Student, StudentId};
+use anyhow::{bail, Context, Error};
 use async_trait::async_trait;
-use failure::{bail, Error, ResultExt};
 use tracing::trace;
 
 #[async_trait]

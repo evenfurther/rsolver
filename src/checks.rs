@@ -1,5 +1,5 @@
 use crate::model::Assignments;
-use failure::{bail, Error};
+use anyhow::{bail, Error};
 use tracing::warn;
 
 pub fn check_pinned_consistency(a: &Assignments) {
