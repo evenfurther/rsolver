@@ -59,13 +59,8 @@ async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::fmt().with_max_level(level).init();
     let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
     let dry_run = matches.is_present("dry_run");
-    let mut loader: Box<dyn loaders::Loader> =
-        match &get_config(&config, "solver", "loader").unwrap_or_else(|| "mysql".to_owned())[..] {
-            "mysql" => Box::new(loaders::MysqlLoader::new(&config).await?),
-            #[cfg(feature = "sqlite")]
-            "sqlite" => Box::new(loaders::SqliteLoader::new(&config).await?),
-            other => bail!("unknown loader: {}", other),
-        };
+    let mut loader =
+        loaders::Loader::new(&get_config(&config, "solver", "loader").unwrap()).await?;
     // Load data from the database
     let (original_students, original_projects) = loader.load().await?;
     // Isolate lazy students before remapping if asked to do so

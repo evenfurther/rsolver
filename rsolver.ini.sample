@@ -1,9 +1,3 @@
 [solver]
-loader = mysql
+loader = mysql://rsolver:rsolver@localhost/rsolver
 algorithm = ordering
-
-[mysql]
-host = localhost
-user = rsolver
-password = rsolver
-database = rsolver
