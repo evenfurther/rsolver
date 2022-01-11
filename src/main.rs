@@ -60,7 +60,7 @@ async fn main() -> Result<(), Error> {
     let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
     let dry_run = matches.is_present("dry_run");
     let mut loader =
-        loaders::Loader::new(&get_config(&config, "solver", "loader").unwrap()).await?;
+        loaders::Loader::new(&get_config(&config, "solver", "database").unwrap()).await?;
     // Load data from the database
     let (original_students, original_projects) = loader.load().await?;
     // Isolate lazy students before remapping if asked to do so
