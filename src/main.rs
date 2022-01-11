@@ -19,6 +19,7 @@ fn assign(
     projects: Vec<Project>,
     config: &Config,
 ) -> Result<Assignments, Error> {
+    let start = std::time::Instant::now();
     let mut assignments = Assignments::new(students, projects);
     {
         let mut algo: Box<dyn Algo> = match &get_config(config, "solver", "algorithm")
@@ -30,6 +31,7 @@ fn assign(
         };
         algo.assign()?;
     }
+    tracing::debug!("Assignments computed in {:?}", start.elapsed());
     Ok(assignments)
 }
 

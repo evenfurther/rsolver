@@ -1,20 +1,19 @@
 use crate::model::{Project, ProjectId, Student, StudentId};
 use anyhow::{Context, Error};
-use sqlx::any::{AnyConnectOptions, AnyPoolOptions, AnyRow};
-use sqlx::{Any, Pool, Row};
+use sqlx::any::{AnyConnectOptions, AnyRow};
+use sqlx::{AnyConnection, Connection, Row};
 use std::collections::HashMap;
 use std::str::FromStr;
 use tracing::trace;
 
 pub struct Loader {
-    pool: Pool<Any>,
+    conn: AnyConnection,
 }
 
 impl Loader {
     pub async fn new(s: &str) -> Result<Self, Error> {
-        let options = AnyConnectOptions::from_str(s)?;
         Ok(Self {
-            pool: AnyPoolOptions::new().connect_with(options).await?,
+            conn: AnyConnection::connect_with(&AnyConnectOptions::from_str(s)?).await?,
         })
     }
 
@@ -47,7 +46,7 @@ impl Loader {
         Ok((students, projects))
     }
 
-    async fn load_projects(&self) -> Result<Vec<Project>, Error> {
+    async fn load_projects(&mut self) -> Result<Vec<Project>, Error> {
         sqlx::query("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")
             .map(|row: AnyRow| {
                 Ok(Project {
@@ -58,13 +57,13 @@ impl Loader {
                     max_occurrences: row.get::<i32, _>("occurrences") as u32,
                 })
             })
-            .fetch_all(&self.pool)
+            .fetch_all(&mut self.conn)
             .await?
             .into_iter()
             .collect()
     }
 
-    async fn load_students(&self) -> Result<Vec<Student>, Error> {
+    async fn load_students(&mut self) -> Result<Vec<Student>, Error> {
         sqlx::query("SELECT id, prenom, nom FROM eleves")
             .map(|row: AnyRow| {
                 Ok(Student::new(
@@ -75,13 +74,13 @@ impl Loader {
                     HashMap::new(),
                 ))
             })
-            .fetch_all(&self.pool)
+            .fetch_all(&mut self.conn)
             .await?
             .into_iter()
             .collect()
     }
 
-    async fn load_bonuses(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+    async fn load_bonuses(&mut self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         sqlx::query("SELECT eleve_id, projet_id, poids FROM pref_override")
             .map(|row: AnyRow| {
                 Ok((
@@ -90,13 +89,13 @@ impl Loader {
                     row.get("poids"),
                 ))
             })
-            .fetch_all(&self.pool)
+            .fetch_all(&mut self.conn)
             .await?
             .into_iter()
             .collect()
     }
 
-    async fn load_preferences(&self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+    async fn load_preferences(&mut self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
         sqlx::query("SELECT eleve_id, projet_id, poids FROM preferences")
             .map(|row: AnyRow| {
                 Ok((
@@ -105,14 +104,14 @@ impl Loader {
                     row.get("poids"),
                 ))
             })
-            .fetch_all(&self.pool)
+            .fetch_all(&mut self.conn)
             .await?
             .into_iter()
             .collect()
     }
 
     pub async fn save_assignments(
-        &self,
+        &mut self,
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
     ) -> Result<(), Error> {
@@ -120,14 +119,14 @@ impl Loader {
             sqlx::query("UPDATE eleves SET attribution=? WHERE id=?")
                 .bind(p.0 as i32)
                 .bind(s.0 as i32)
-                .execute(&self.pool)
+                .execute(&mut self.conn)
                 .await
                 .context("cannot save attributions")?;
         }
         for s in unassigned {
             sqlx::query("UPDATE eleves SET attribution=NULL WHERE id=?")
                 .bind(s.0 as i32)
-                .execute(&self.pool)
+                .execute(&mut self.conn)
                 .await
                 .context("cannot delete attribution for unassigned student")?;
         }
