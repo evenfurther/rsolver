@@ -115,21 +115,26 @@ impl Loader {
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
     ) -> Result<(), Error> {
+        let mut trans = self.conn.begin().await?;
         for (s, p) in assignments {
             sqlx::query("UPDATE eleves SET attribution=? WHERE id=?")
                 .bind(p.0 as i32)
                 .bind(s.0 as i32)
-                .execute(&mut self.conn)
+                .execute(&mut trans)
                 .await
                 .context("cannot save attributions")?;
         }
         for s in unassigned {
             sqlx::query("UPDATE eleves SET attribution=NULL WHERE id=?")
                 .bind(s.0 as i32)
-                .execute(&mut self.conn)
+                .execute(&mut trans)
                 .await
                 .context("cannot delete attribution for unassigned student")?;
         }
+        trans
+            .commit()
+            .await
+            .context("error when committing transaction")?;
         Ok(())
     }
 }
