@@ -2,7 +2,9 @@ use crate::algos::{Algo, Hungarian, Ordering};
 use crate::config::{get_config, Config};
 use crate::model::{Assignments, Project, Student};
 use anyhow::{bail, ensure, Error};
-use clap::{app_from_crate, arg};
+use clap::Parser;
+use std::path::PathBuf;
+use std::str::FromStr;
 use tracing::Level;
 
 mod algos;
@@ -36,20 +38,33 @@ fn assign(
     Ok(assignments)
 }
 
+#[derive(Parser)]
+#[clap(version, author, about)]
+struct Options {
+    /// Use FILE instead of rsolver.ini
+    #[clap(short, long, parse(from_os_str))]
+    config: Option<PathBuf>,
+    /// Output assignments as CSV records
+    #[clap(short = 'C', long)]
+    csv: bool,
+    /// Do not assign unregistered students to any project
+    #[clap(short, long)]
+    drop_unregistered: bool,
+    /// Do not write back results to database
+    #[clap(short = 'n', long)]
+    dry_run: bool,
+    /// Rename lazy student into Zzz + order
+    #[clap(short, long)]
+    rename_unregistered: bool,
+    /// Set verbosity level
+    #[clap(short, parse(from_occurrences))]
+    verbosity: usize,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let matches = app_from_crate!()
-        .about("Automatically assign projects to students")
-        .args(&[
-            arg!(-c --config [FILE] "Use FILE file instead of rsolver.ini"),
-            arg!(-C --csv "Output assignments as CSV file"),
-            arg!(-d --"drop-unregistered" "Do not assign unregistered students to any project"),
-            arg!(-n --"dry-run" "Do not write back results to database"),
-            arg!(-r --"rename-unregistered" "Rename lazy student into Zzz + order"),
-            arg!(verbosity: -v ... "Set verbosity level"),
-        ])
-        .get_matches();
-    let level = match matches.occurrences_of("verbosity") {
+    let options = Options::parse();
+    let level = match options.verbosity {
         0 => Level::ERROR,
         1 => Level::WARN,
         2 => Level::INFO,
@@ -57,14 +72,13 @@ async fn main() -> Result<(), Error> {
         _ => Level::TRACE,
     };
     tracing_subscriber::fmt::fmt().with_max_level(level).init();
-    let config = Config::load(matches.value_of("config").unwrap_or("rsolver.ini"))?;
-    let dry_run = matches.is_present("dry_run");
+    let config = Config::load(options.config.unwrap_or(PathBuf::from_str("rsolver.ini")?))?;
     let mut loader =
         loaders::Loader::new(&get_config(&config, "solver", "database").unwrap()).await?;
     // Load data from the database
     let (original_students, original_projects) = loader.load().await?;
     // Isolate lazy students before remapping if asked to do so
-    let (original_students, lazy_students) = if matches.is_present("drop-unregistered") {
+    let (original_students, lazy_students) = if options.drop_unregistered {
         remap::separate_lazy(original_students)
     } else {
         (original_students, vec![])
@@ -78,7 +92,7 @@ async fn main() -> Result<(), Error> {
     };
     // Compute the new assignments
     let assignments = assign(students, projects, &config)?;
-    if !dry_run {
+    if !options.dry_run {
         // Make a list of unassigned students, be it from the algorithm
         // or because lazy students were singled out beforehand
         let mut unassigned_students = assignments
@@ -105,11 +119,11 @@ async fn main() -> Result<(), Error> {
             .await?;
     }
     // If CSV output is requested, only output assignments
-    if matches.is_present("csv") {
+    if options.csv {
         display::display_csv(&assignments)?;
     } else {
         // Rename lazy students if requested, to ease output comparison
-        display::display_details(&assignments, matches.is_present("rename-unregistered"));
+        display::display_details(&assignments, options.rename_unregistered);
         display::display_stats(&assignments, lazy_students.len());
         display::display_missed_bonuses(&assignments);
         display::display_empty(&assignments);

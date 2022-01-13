@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::{Context, Error};
 use ini::Ini;
 
@@ -6,7 +8,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(file_name: &str) -> Result<Config, Error> {
+    pub fn load<P: AsRef<Path>>(file_name: P) -> Result<Config, Error> {
         Ok(Config {
             conf: Ini::load_from_file(file_name).context("cannot load configuration file")?,
         })
