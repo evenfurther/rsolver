@@ -758,9 +758,9 @@ dependencies = [
 
 [[package]]
 name = "pathfinding"
-version = "2.2.3"
+version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd1d1c4f3f2e8fe8bfc4520125e824c49cc8241e35f6ee1b040b4a95eaea016a"
+checksum = "08981b346b00818efc9f128f1dfb682a877402590bc6014d1d8b1e56c1574ded"
 dependencies = [
  "fixedbitset",
  "indexmap",
@@ -768,6 +768,7 @@ dependencies = [
  "itertools",
  "num-traits",
  "rustc-hash",
+ "thiserror",
 ]
 
 [[package]]

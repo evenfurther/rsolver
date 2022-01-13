@@ -51,7 +51,7 @@ impl<'a> Hungarian<'a> {
         for s in a.all_students() {
             for p in a.all_projects() {
                 if let Some(rank) = a.rank_of(s, p) {
-                    weights[&(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
+                    weights[(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
                         -large
                     } else {
                         (rank as i64 * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
@@ -64,7 +64,7 @@ impl<'a> Hungarian<'a> {
 
     /// Return the weight for a student and a project.
     fn weight_of(&self, StudentId(student): StudentId, ProjectId(project): ProjectId) -> i64 {
-        self.weights[&(student, project)]
+        self.weights[(student, project)]
     }
 
     /// Return the some of weights of students registered on a project.
@@ -97,7 +97,7 @@ impl<'a> Hungarian<'a> {
                 if !self.assignments.is_cancelled(p) {
                     let score = self.weight_of(s, p);
                     for n in &seats_for[&p] {
-                        prefs[&(s.0, *n as usize)] = score;
+                        prefs[(s.0, *n as usize)] = score;
                     }
                 }
             }

@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1.0.52"
 clap = { version = "3.0", features = ["cargo"] }
 csv = "1.1.1"
-pathfinding = "2.2.0"
+pathfinding = "3.0.6"
 rand = "0.8.3"
 rust-ini = "0.17.0"
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "mysql", "macros", "offline", "any"] }
