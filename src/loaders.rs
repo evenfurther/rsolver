@@ -37,10 +37,15 @@ impl Loader {
                 .filter_map(|&(s, p, w)| if s == student.id { Some((p, -w)) } else { None })
                 .collect();
             if !student.bonuses.is_empty() {
-                trace!("{} has been assigned the following bonuses:", student.name);
-                for (p, w) in &student.bonuses {
-                    trace!("  - {}: {}", projects[p.0].name, w);
-                }
+                trace!(
+                    student = %student,
+                    bonuses = ?student
+                        .bonuses
+                        .iter()
+                        .map(|(p, w)| (&projects[p.0].name, w))
+                        .collect::<Vec<_>>(),
+                    "student has been assigned bonuses",
+                );
             }
         }
         Ok((students, projects))

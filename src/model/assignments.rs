@@ -328,10 +328,9 @@ impl Assignments {
         } as u32;
         ensure!(
             seats >= students,
-            "insufficient number of open projects, can host {} {}students out of {}",
-            seats,
-            if exclude_lazy { "non-lazy " } else { "" },
-            self.students.len()
+            "insufficient number of open projects, can host {seats} {q}students out of {total}",
+            q = if exclude_lazy { "non-lazy " } else { "" },
+            total = self.students.len()
         );
         Ok(())
     }

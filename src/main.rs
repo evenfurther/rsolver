@@ -27,7 +27,7 @@ fn assign(
         {
             "ordering" => Box::new(Ordering::new(&mut assignments)),
             "hungarian" => Box::new(Hungarian::new(&mut assignments, config)?),
-            other => bail!("unknown algorithm: {}", other),
+            other => bail!("unknown algorithm: {other}"),
         };
         algo.assign()?;
     }
@@ -120,8 +120,8 @@ async fn main() -> Result<(), Error> {
     checks::check_pinned_consistency(&assignments);
     ensure!(
         assignments.unassigned_students().is_empty(),
-        "{} students could not get assigned to any project",
-        assignments.unassigned_students().len()
+        "{n} students could not get assigned to any project",
+        n = assignments.unassigned_students().len()
     );
     checks::ensure_acceptable(&assignments)
 }

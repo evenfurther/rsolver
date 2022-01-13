@@ -16,7 +16,7 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
                 (
                     if rename_lazy && a.student(s).is_lazy() {
                         lazy_index += 1;
-                        format!("Zzz {}", lazy_index)
+                        format!("Zzz {lazy_index}")
                     } else {
                         a.student(s).name.clone()
                     },
@@ -27,18 +27,18 @@ pub fn display_details(a: &Assignments, rename_lazy: bool) {
         students.sort_by_key(|(name, _)| name.clone());
         if !students.is_empty() {
             if a.max_occurrences(p) == 1 {
-                println!("{}:", a.project(p).name);
+                println!("{proj}:", proj = a.project(p));
             } else {
                 println!(
-                    "{} ({} occurrences):",
-                    a.project(p).name,
-                    a.max_occurrences(p)
+                    "{proj} ({occ} occurrences):",
+                    proj = a.project(p),
+                    occ = a.max_occurrences(p)
                 );
             }
             for (name, s) in students {
                 print!("  - {}", name);
                 if let Some(rank) = a.rank_of(s, p) {
-                    print!(" (rank {})", rank + 1);
+                    print!(" (rank {r})", r = rank + 1);
                 }
                 if a.is_pinned_and_has_chosen(s, p) {
                     print!(" (pinned)");
@@ -73,9 +73,10 @@ pub fn display_stats(a: &Assignments, eliminated: usize) {
         students + eliminated,
     );
     println!(
-        "Projects/occurrences: {}/{}",
-        a.filter_projects(|p| a.is_open(p)).len(),
-        a.filter_projects(|p| a.is_open(p))
+        "Projects/occurrences: {proj}/{occ}",
+        proj = a.filter_projects(|p| a.is_open(p)).len(),
+        occ = a
+            .filter_projects(|p| a.is_open(p))
             .into_iter()
             .map(|p| a.max_occurrences(p))
             .sum::<u32>()
@@ -90,11 +91,9 @@ pub fn display_stats(a: &Assignments, eliminated: usize) {
     for (rank, (n, c)) in ranks.iter().zip(cumul).enumerate() {
         if *n != 0 {
             println!(
-                "  - rank {}: {} (cumulative {} - {:.2}%)",
-                rank + 1,
-                n,
-                c,
-                100.0 * c as f32 / total as f32
+                "  - rank {r}: {n} (cumulative {c} - {percent:.2}%)",
+                r = rank + 1,
+                percent = 100.0 * c as f32 / total as f32
             );
         }
     }
@@ -106,7 +105,7 @@ pub fn display_empty(a: &Assignments) {
     if !projects.is_empty() {
         println!("Empty projects:");
         for p in projects {
-            println!("  - {}", a.project(p).name);
+            println!("  - {proj}", proj = a.project(p));
         }
     }
 }
@@ -131,7 +130,11 @@ pub fn display_with_many_lazy(a: &Assignments) {
             "Projects with at least half the members being unregistered students (unregistered/total):"
         );
         for (p, regular, lazy) in projects {
-            println!("  - {} ({}/{})", a.project(p).name, lazy, lazy + regular);
+            println!(
+                "  - {proj} ({lazy}/{all})",
+                proj = a.project(p),
+                all = lazy + regular
+            );
         }
     }
 }
@@ -175,13 +178,12 @@ pub fn display_missed_bonuses(a: &Assignments) {
         println!("Useless bonuses:");
         for (s, p, r, pp, rr, b) in missed_bonuses {
             println!(
-                "  - {} was assigned to {} (rank {}) despite having a bonus of {} for {} (rank {})",
-                a.student(s).name,
-                a.project(p).name,
-                r + 1,
-                b,
-                a.project(pp).name,
-                rr + 1
+                "  - {s} was assigned to {p} (rank {r}) despite having a bonus of {b} for {pp} (rank {rr})",
+                s = a.student(s),
+                p = a.project(p),
+                r = r + 1,
+                pp = a.project(pp),
+                rr = rr + 1
             );
         }
     }

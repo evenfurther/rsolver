@@ -1,5 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
+use std::fmt::Display;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct ProjectId(pub usize);
 
@@ -31,6 +33,12 @@ impl Project {
     pub fn acceptable(&self, occ: u32, n: u32) -> bool {
         assert!(occ <= self.max_occurrences);
         (1..=occ).any(|occ| n >= occ * self.min_students && n <= occ * self.max_students)
+    }
+}
+
+impl Display for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{name}", name = self.name)
     }
 }
 

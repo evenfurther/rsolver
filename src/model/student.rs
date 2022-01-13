@@ -1,7 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use super::ProjectId;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct StudentId(pub usize);
@@ -24,7 +24,7 @@ impl Student {
         rankings: Vec<ProjectId>,
         bonuses: HashMap<ProjectId, i64>,
     ) -> Student {
-        let name = format!("{} {}", first_name, last_name);
+        let name = format!("{first_name} {last_name}");
         Student {
             id,
             first_name,
@@ -41,5 +41,11 @@ impl Student {
 
     pub fn is_lazy(&self) -> bool {
         self.rankings.is_empty()
+    }
+}
+
+impl Display for Student {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{name}", name = self.name)
     }
 }

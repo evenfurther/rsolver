@@ -290,7 +290,7 @@ impl<'a> Hungarian<'a> {
         // the project.
         if let Some(to_cancel) = self.find_occurrence_to_cancel(false) {
             info!(
-                project = %self.assignments.project(to_cancel).name,
+                project = %self.assignments.project(to_cancel),
                 remaining_occurrences = %self.assignments.max_occurrences(to_cancel) - 1,
                 "Cancelling project occurrence"
             );
@@ -316,7 +316,7 @@ impl<'a> Hungarian<'a> {
         if !self.assignments.unassigned_students().is_empty() {
             if let Some(to_cancel) = self.find_occurrence_to_cancel(true) {
                 info!(
-                    project = %self.assignments.project(to_cancel).name,
+                    project = %self.assignments.project(to_cancel),
                     lazy_students = %self.assignments.lazy_students_count_for(to_cancel),
                     total_students = %self.assignments.students_for(to_cancel).len(),
                     remaining_occurrences = %self.assignments.max_occurrences(to_cancel) - 1,
@@ -327,8 +327,8 @@ impl<'a> Hungarian<'a> {
                 return self.do_assignments();
             }
             bail!(
-                "unable to assign a project to {} students",
-                self.assignments.unassigned_students().len()
+                "unable to assign a project to {n} students",
+                n = self.assignments.unassigned_students().len()
             );
         }
 
