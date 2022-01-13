@@ -14,6 +14,7 @@ mod model;
 mod remap;
 mod stats;
 
+#[tracing::instrument(skip_all)]
 fn assign(
     students: Vec<Student>,
     projects: Vec<Project>,
@@ -31,7 +32,7 @@ fn assign(
         };
         algo.assign()?;
     }
-    tracing::debug!("Assignments computed in {:?}", start.elapsed());
+    tracing::debug!(elapsed = ?start.elapsed(), "assignments computation time");
     Ok(assignments)
 }
 

@@ -8,7 +8,7 @@ use pathfinding::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::isize;
 use std::iter;
-use tracing::{debug, info, trace};
+use tracing::{debug, info, instrument, trace};
 
 pub struct Hungarian<'a> {
     assignments: &'a mut Assignments,
@@ -109,6 +109,7 @@ impl<'a> Hungarian<'a> {
     }
 
     /// Complete incomplete projects with unassigned students.
+    #[instrument(skip_all)]
     fn complete_incomplete_projects(&mut self) {
         let mut unassigned = self.assignments.unassigned_students();
         let mut incomplete = self
@@ -147,6 +148,7 @@ impl<'a> Hungarian<'a> {
 
     /// Complete non-full projects with unassigned students. It will
     /// never make an acceptable project unacceptable.
+    #[instrument(skip_all)]
     fn complete_non_full_projects(&mut self) {
         for s in self.assignments.unassigned_students() {
             if let Some(p) = self
@@ -183,6 +185,7 @@ impl<'a> Hungarian<'a> {
 
     /// Open new projects as needed to assign unassigned students. However,
     /// some opened projects might be unacceptable as-is.
+    #[instrument(skip_all)]
     fn open_new_projects_as_needed(&mut self) {
         let mut unassigned = self.assignments.unassigned_students();
         let mut new_occurrences = false;
@@ -234,6 +237,7 @@ impl<'a> Hungarian<'a> {
 
     /// If it exists, find one of the best unacceptable project occurrence
     /// to cancel. Or even an acceptable one if `including_acceptable` is true.
+    #[instrument(skip_all)]
     fn find_occurrence_to_cancel(&self, including_acceptable: bool) -> Option<ProjectId> {
         self.assignments
             .filter_projects(|p| {
@@ -267,6 +271,7 @@ impl<'a> Hungarian<'a> {
 
     /// Compute the assigments, without checking that we have enough for all students.
     /// We just need to have enough for non-lazy students at this stage.
+    #[instrument(skip_all)]
     fn do_assignments(&mut self) -> Result<(), Error> {
         // Check that we have enough projects for our non-lazy students.
         self.assignments.check_number_of_seats(true)?;
