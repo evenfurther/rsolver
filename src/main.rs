@@ -2,7 +2,7 @@ use crate::algos::{Algo, Hungarian, Ordering};
 use crate::config::{get_config, Config};
 use crate::model::{Assignments, Project, Student};
 use anyhow::{bail, ensure, Error};
-use clap::{crate_authors, crate_version, App};
+use clap::{app_from_crate, arg};
 use tracing::Level;
 
 mod algos;
@@ -38,21 +38,18 @@ fn assign(
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let matches = App::new("rsolver")
+    let matches = app_from_crate!()
         .about("Automatically assign projects to students")
-        .author(crate_authors!())
-        .version(crate_version!())
-        .args_from_usage(
-            "
-          -c,--config=[FILE]        'Use FILE file instead of rsolver.ini'
-          -C,--csv                  'Output assignments as CSV file'
-          -d,--drop-unregistered    'Do not assign unregistered students to any project'
-          -n,--dry-run              'Do not write back results to database'
-          -r,--rename-unregistered  'Rename lazy student into Zzz + order'
-          -v...                     'Set verbosity level'",
-        )
+        .args(&[
+            arg!(-c --config [FILE] "Use FILE file instead of rsolver.ini"),
+            arg!(-C --csv "Output assignments as CSV file"),
+            arg!(-d --"drop-unregistered" "Do not assign unregistered students to any project"),
+            arg!(-n --"dry-run" "Do not write back results to database"),
+            arg!(-r --"rename-unregistered" "Rename lazy student into Zzz + order"),
+            arg!(verbosity: -v ... "Set verbosity level"),
+        ])
         .get_matches();
-    let level = match matches.occurrences_of("v") {
+    let level = match matches.occurrences_of("verbosity") {
         0 => Level::ERROR,
         1 => Level::WARN,
         2 => Level::INFO,
