@@ -45,9 +45,16 @@ struct Options {
     #[clap(short, long, parse(from_os_str))]
     config: Option<PathBuf>,
     /// Output assignments as CSV records
+    ///
+    /// The CSV records will be output on the standard output instead
+    /// of the plain text assignment.
     #[clap(short = 'C', long)]
     csv: bool,
     /// Do not assign unregistered students to any project
+    ///
+    /// Unregistered students will be dropped from the system.
+    /// Be careful in that not enough registered students may fail
+    /// to be assigned to projects due to insufficient project members.
     #[clap(short, long)]
     drop_unregistered: bool,
     /// Do not write back results to database
@@ -57,6 +64,8 @@ struct Options {
     #[clap(short, long)]
     rename_unregistered: bool,
     /// Set verbosity level
+    ///
+    /// This option can be repeated.
     #[clap(short, parse(from_occurrences))]
     verbosity: usize,
 }
