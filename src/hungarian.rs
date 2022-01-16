@@ -7,12 +7,8 @@ use serde::Deserialize;
 use std::collections::hash_map::HashMap;
 use std::isize;
 use std::iter;
+use std::time::Instant;
 use tracing::{debug, info, instrument, trace};
-
-pub struct Hungarian<'a> {
-    assignments: &'a mut Assignments,
-    weights: Matrix<i64>,
-}
 
 #[derive(Deserialize)]
 pub struct HungarianConfig {
@@ -20,58 +16,62 @@ pub struct HungarianConfig {
     rank_pow: Option<u32>,
 }
 
-impl<'a> Hungarian<'a> {
-    pub fn new(
-        assignments: &'a mut Assignments,
-        config: &HungarianConfig,
-    ) -> Result<Hungarian<'a>, Error> {
-        let rank_mult = config.rank_mult.unwrap_or(3);
-        let rank_pow = config.rank_pow.unwrap_or(4);
-        let weights = Self::compute_weights(assignments, rank_mult, rank_pow);
-        Ok(Hungarian {
-            assignments,
-            weights,
-        })
+#[instrument(skip_all)]
+pub fn assign(assignments: &mut Assignments, config: &HungarianConfig) -> Result<(), Error> {
+    let start = Instant::now();
+    // Check that we have enough open positions for all our students.
+    assignments.check_number_of_seats(false)?;
+    // Compute the best assignments
+    let weights = compute_weights(
+        assignments,
+        config.rank_mult.unwrap_or(3),
+        config.rank_pow.unwrap_or(4),
+    );
+    Hungarian {
+        assignments,
+        weights,
     }
+    .do_assignments()?;
+    debug!(elapsed = ?start.elapsed(), "Time spent in assignment");
+    Ok(())
+}
 
-    pub fn assign(&mut self) -> Result<(), Error> {
-        // Check that we have enough open positions for all our students.
-        self.assignments.check_number_of_seats(false)?;
-
-        // Proceed.
-        self.do_assignments()
+/// Compute the weights indexed by student then by project (less is better).
+fn compute_weights(a: &Assignments, rank_mult: i64, rank_pow: u32) -> Matrix<i64> {
+    let slen = a.all_students().len() as i64;
+    let mut seats = Vec::new();
+    let mut seats_for = HashMap::new();
+    for p in a.all_projects() {
+        let n = a.max_students(p) * a.max_occurrences(p);
+        seats_for.insert(
+            p,
+            (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
+        );
+        seats.extend(iter::repeat(p).take(n as usize));
     }
-
-    /// Compute the weights indexed by student then by project (less is better).
-    fn compute_weights(a: &Assignments, rank_mult: i64, rank_pow: u32) -> Matrix<i64> {
-        let slen = a.all_students().len() as i64;
-        let mut seats = Vec::new();
-        let mut seats_for = HashMap::new();
+    let large = i64::MAX / (1 + slen);
+    let unregistered = large / (1 + slen);
+    let mut weights = Matrix::new(a.all_students().len(), a.all_projects().len(), unregistered);
+    for s in a.all_students() {
         for p in a.all_projects() {
-            let n = a.max_students(p) * a.max_occurrences(p);
-            seats_for.insert(
-                p,
-                (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
-            );
-            seats.extend(iter::repeat(p).take(n as usize));
-        }
-        let large = i64::MAX / (1 + slen);
-        let unregistered = large / (1 + slen);
-        let mut weights = Matrix::new(a.all_students().len(), a.all_projects().len(), unregistered);
-        for s in a.all_students() {
-            for p in a.all_projects() {
-                if let Some(rank) = a.rank_of(s, p) {
-                    weights[(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
-                        -large
-                    } else {
-                        (rank as i64 * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
-                    };
-                }
+            if let Some(rank) = a.rank_of(s, p) {
+                weights[(s.0, p.0)] = if a.is_pinned_and_has_chosen(s, p) {
+                    -large
+                } else {
+                    (rank as i64 * rank_mult).pow(rank_pow) - a.bonus(s, p).unwrap_or(0)
+                };
             }
         }
-        weights
     }
+    weights
+}
 
+struct Hungarian<'a> {
+    assignments: &'a mut Assignments,
+    weights: Matrix<i64>,
+}
+
+impl<'a> Hungarian<'a> {
     /// Return the weight for a student and a project.
     fn weight_of(&self, StudentId(student): StudentId, ProjectId(project): ProjectId) -> i64 {
         self.weights[(student, project)]

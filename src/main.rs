@@ -1,12 +1,10 @@
+use crate::model::Assignments;
 use anyhow::{ensure, Context, Error};
 use clap::Parser;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::Level;
-
-use hungarian::{Hungarian, HungarianConfig};
-use model::{Assignments, Project, Student};
 
 mod checks;
 mod display;
@@ -15,19 +13,6 @@ mod loaders;
 mod model;
 mod remap;
 mod stats;
-
-#[tracing::instrument(skip_all)]
-fn assign(
-    students: Vec<Student>,
-    projects: Vec<Project>,
-    config: &Config,
-) -> Result<Assignments, Error> {
-    let start = std::time::Instant::now();
-    let mut assignments = Assignments::new(students, projects);
-    Hungarian::new(&mut assignments, &config.hungarian)?.assign()?;
-    tracing::debug!(elapsed = ?start.elapsed(), "assignments computation time");
-    Ok(assignments)
-}
 
 #[derive(Parser)]
 #[clap(version, author, about)]
@@ -64,7 +49,7 @@ struct Options {
 #[derive(Deserialize)]
 pub struct Config {
     pub solver: SolverConfig,
-    pub hungarian: HungarianConfig,
+    pub hungarian: hungarian::HungarianConfig,
 }
 
 #[derive(Deserialize)]
@@ -110,7 +95,9 @@ async fn main() -> Result<(), Error> {
         (students, projects)
     };
     // Compute the new assignments
-    let assignments = assign(students, projects, &config)?;
+    let mut assignments = Assignments::new(students, projects);
+    hungarian::assign(&mut assignments, &config.hungarian)?;
+    // Save the results if requested
     if !options.dry_run {
         // Make a list of unassigned students, be it from the algorithm
         // or because lazy students were singled out beforehand
