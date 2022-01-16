@@ -1,15 +1,14 @@
-use anyhow::{ensure, Error};
+use anyhow::{ensure, Context, Error};
 use clap::Parser;
-use std::path::PathBuf;
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::Level;
 
-use config::{get_config, Config};
-use hungarian::Hungarian;
+use hungarian::{Hungarian, HungarianConfig};
 use model::{Assignments, Project, Student};
 
 mod checks;
-mod config;
 mod display;
 mod hungarian;
 mod loaders;
@@ -25,7 +24,7 @@ fn assign(
 ) -> Result<Assignments, Error> {
     let start = std::time::Instant::now();
     let mut assignments = Assignments::new(students, projects);
-    Hungarian::new(&mut assignments, config)?.assign()?;
+    Hungarian::new(&mut assignments, &config.hungarian)?.assign()?;
     tracing::debug!(elapsed = ?start.elapsed(), "assignments computation time");
     Ok(assignments)
 }
@@ -62,6 +61,26 @@ struct Options {
     verbosity: usize,
 }
 
+#[derive(Deserialize)]
+pub struct Config {
+    pub solver: SolverConfig,
+    pub hungarian: HungarianConfig,
+}
+
+#[derive(Deserialize)]
+pub struct SolverConfig {
+    pub database: String,
+}
+
+impl Config {
+    pub fn load<P: AsRef<Path>>(file_name: P) -> Result<Config, Error> {
+        toml::from_str(
+            &std::fs::read_to_string(file_name).context("cannot read configuration file")?,
+        )
+        .context("invalid configuration file")
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let options = Options::parse();
@@ -74,8 +93,7 @@ async fn main() -> Result<(), Error> {
     };
     tracing_subscriber::fmt::fmt().with_max_level(level).init();
     let config = Config::load(options.config.unwrap_or(PathBuf::from_str("rsolver.ini")?))?;
-    let mut loader =
-        loaders::Loader::new(&get_config(&config, "solver", "database").unwrap()).await?;
+    let mut loader = loaders::Loader::new(&config.solver.database).await?;
     // Load data from the database
     let (original_students, original_projects) = loader.load().await?;
     // Isolate lazy students before remapping if asked to do so

@@ -1,9 +1,9 @@
 #![allow(clippy::cast_possible_wrap)]
 
 use crate::model::{Assignments, ProjectId, StudentId};
-use crate::{get_config, Config};
-use anyhow::{bail, Context, Error};
+use anyhow::{bail, Error};
 use pathfinding::prelude::*;
+use serde::Deserialize;
 use std::collections::hash_map::HashMap;
 use std::isize;
 use std::iter;
@@ -14,16 +14,19 @@ pub struct Hungarian<'a> {
     weights: Matrix<i64>,
 }
 
+#[derive(Deserialize)]
+pub struct HungarianConfig {
+    rank_mult: Option<i64>,
+    rank_pow: Option<u32>,
+}
+
 impl<'a> Hungarian<'a> {
-    pub fn new(assignments: &'a mut Assignments, config: &Config) -> Result<Hungarian<'a>, Error> {
-        let rank_mult = get_config(config, "hungarian", "rank_mult")
-            .unwrap_or_else(|| "3".to_owned())
-            .parse::<i64>()
-            .context("cannot parse hungarian.rank_mult configuration parameter")?;
-        let rank_pow = get_config(config, "hungarian", "rank_pow")
-            .unwrap_or_else(|| "4".to_owned())
-            .parse::<u32>()
-            .context("cannot parse hungarian.rank_pow configuration parameter")?;
+    pub fn new(
+        assignments: &'a mut Assignments,
+        config: &HungarianConfig,
+    ) -> Result<Hungarian<'a>, Error> {
+        let rank_mult = config.rank_mult.unwrap_or(3);
+        let rank_pow = config.rank_pow.unwrap_or(4);
         let weights = Self::compute_weights(assignments, rank_mult, rank_pow);
         Ok(Hungarian {
             assignments,
