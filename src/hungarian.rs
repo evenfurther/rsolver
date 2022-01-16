@@ -1,6 +1,5 @@
 #![allow(clippy::cast_possible_wrap)]
 
-use super::Algo;
 use crate::model::{Assignments, ProjectId, StudentId};
 use crate::{get_config, Config};
 use anyhow::{bail, Context, Error};
@@ -30,6 +29,14 @@ impl<'a> Hungarian<'a> {
             assignments,
             weights,
         })
+    }
+
+    pub fn assign(&mut self) -> Result<(), Error> {
+        // Check that we have enough open positions for all our students.
+        self.assignments.check_number_of_seats(false)?;
+
+        // Proceed.
+        self.do_assignments()
     }
 
     /// Compute the weights indexed by student then by project (less is better).
@@ -338,19 +345,5 @@ impl<'a> Hungarian<'a> {
         }
 
         Ok(())
-    }
-}
-
-impl<'a> Algo for Hungarian<'a> {
-    fn assign(&mut self) -> Result<(), Error> {
-        // Check that we have enough open positions for all our students.
-        self.assignments.check_number_of_seats(false)?;
-
-        // Proceed.
-        self.do_assignments()
-    }
-
-    fn get_assignments(&self) -> &Assignments {
-        self.assignments
     }
 }

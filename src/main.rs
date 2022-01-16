@@ -1,16 +1,17 @@
-use crate::algos::{Algo, Hungarian, Ordering};
-use crate::config::{get_config, Config};
-use crate::model::{Assignments, Project, Student};
-use anyhow::{bail, ensure, Error};
+use anyhow::{ensure, Error};
 use clap::Parser;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::Level;
 
-mod algos;
+use config::{get_config, Config};
+use hungarian::Hungarian;
+use model::{Assignments, Project, Student};
+
 mod checks;
 mod config;
 mod display;
+mod hungarian;
 mod loaders;
 mod model;
 mod remap;
@@ -24,16 +25,7 @@ fn assign(
 ) -> Result<Assignments, Error> {
     let start = std::time::Instant::now();
     let mut assignments = Assignments::new(students, projects);
-    {
-        let mut algo: Box<dyn Algo> = match &get_config(config, "solver", "algorithm")
-            .unwrap_or_else(|| "hungarian".to_owned())[..]
-        {
-            "ordering" => Box::new(Ordering::new(&mut assignments)),
-            "hungarian" => Box::new(Hungarian::new(&mut assignments, config)?),
-            other => bail!("unknown algorithm: {other}"),
-        };
-        algo.assign()?;
-    }
+    Hungarian::new(&mut assignments, config)?.assign()?;
     tracing::debug!(elapsed = ?start.elapsed(), "assignments computation time");
     Ok(assignments)
 }
