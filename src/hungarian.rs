@@ -265,7 +265,7 @@ impl<'a> Hungarian<'a> {
                 let missing = self
                     .assignments
                     .open_spots_for(p)
-                    .get(0)
+                    .first()
                     .copied()
                     .unwrap_or(0);
                 let all_lazy = students.iter().all(|&s| self.assignments.is_lazy(s));
