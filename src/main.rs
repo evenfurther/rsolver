@@ -1,6 +1,6 @@
 use crate::model::Assignments;
 use anyhow::{ensure, Context, Error};
-use clap::Parser;
+use clap::{ArgAction::{Count, SetFalse, SetTrue}, Parser};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -18,32 +18,32 @@ mod stats;
 #[clap(version, author, about)]
 struct Options {
     /// Use FILE instead of rsolver.ini
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long, value_parser)]
     config: Option<PathBuf>,
     /// Output assignments as CSV records
     ///
     /// The CSV records will be output on the standard output instead
     /// of the plain text assignment.
-    #[clap(short = 'C', long)]
+    #[clap(short = 'C', long, action = SetTrue)]
     csv: bool,
     /// Do not assign unregistered students to any project
     ///
     /// Unregistered students will be dropped from the system.
     /// Be careful in that not enough registered students may fail
     /// to be assigned to projects due to insufficient project members.
-    #[clap(short, long)]
+    #[clap(short, long, action = SetTrue)]
     drop_unregistered: bool,
     /// Do not write back results to database
-    #[clap(short = 'n', long)]
-    dry_run: bool,
+    #[clap(short = 'n', long = "dry_run", action = SetFalse)]
+    commit_to_db: bool,
     /// Rename lazy student into Zzz + order
-    #[clap(short, long)]
+    #[clap(short, long, action = SetTrue)]
     rename_unregistered: bool,
     /// Set verbosity level
     ///
     /// This option can be repeated.
-    #[clap(short, parse(from_occurrences))]
-    verbosity: usize,
+    #[clap(short, action = Count)]
+    verbosity: u8,
 }
 
 #[derive(Deserialize)]
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Error> {
     let mut assignments = Assignments::new(students, projects);
     hungarian::assign(&mut assignments, &config.hungarian)?;
     // Save the results if requested
-    if !options.dry_run {
+    if options.commit_to_db {
         // Make a list of unassigned students, be it from the algorithm
         // or because lazy students were singled out beforehand
         let mut unassigned_students = assignments

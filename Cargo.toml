@@ -8,7 +8,7 @@ license = "Apache-2.0/MIT"
 
 [dependencies]
 anyhow = "1.0.57"
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "3.2", features = ["derive"] }
 csv = "1.1.6"
 pathfinding = "3.0.12"
 rand = "0.8.5"
