@@ -1,6 +1,9 @@
 use crate::model::Assignments;
 use anyhow::{ensure, Context, Error};
-use clap::{ArgAction::{Count, SetFalse, SetTrue}, Parser};
+use clap::{
+    ArgAction::{Count, SetFalse, SetTrue},
+    Parser,
+};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
