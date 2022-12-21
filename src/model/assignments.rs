@@ -28,7 +28,7 @@ impl Assignments {
                             .bonuses
                             .get(&project)
                             .and_then(|bonus| {
-                                (*bonus >= PINNING_BONUS).then(|| StudentId(student_id))
+                                (*bonus >= PINNING_BONUS).then_some(StudentId(student_id))
                             })
                     })
                     .collect()
