@@ -11,13 +11,13 @@ use std::time::Instant;
 use tracing::{debug, info, instrument, trace};
 
 #[derive(Deserialize)]
-pub struct HungarianConfig {
+pub struct Config {
     rank_mult: Option<i64>,
     rank_pow: Option<u32>,
 }
 
 #[instrument(skip_all)]
-pub fn assign(assignments: &mut Assignments, config: &HungarianConfig) -> Result<(), Error> {
+pub fn assign(assignments: &mut Assignments, config: &Config) -> Result<(), Error> {
     let start = Instant::now();
     // Check that we have enough open positions for all our students.
     assignments.check_number_of_seats(false)?;

@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+#![allow(clippy::cast_possible_truncation)]
+
 use crate::model::Assignments;
 use anyhow::{ensure, Context, Error};
 use clap::{
@@ -19,6 +22,7 @@ mod stats;
 
 #[derive(Parser)]
 #[clap(version, author, about)]
+#[allow(clippy::struct_excessive_bools)]
 struct Options {
     /// Use FILE instead of rsolver.ini
     #[clap(short, long, value_parser)]
@@ -52,7 +56,7 @@ struct Options {
 #[derive(Deserialize)]
 pub struct Config {
     pub solver: SolverConfig,
-    pub hungarian: hungarian::HungarianConfig,
+    pub hungarian: hungarian::Config,
 }
 
 #[derive(Deserialize)]
@@ -61,7 +65,7 @@ pub struct SolverConfig {
 }
 
 impl Config {
-    pub fn load<P: AsRef<Path>>(file_name: P) -> Result<Config, Error> {
+    fn load<P: AsRef<Path>>(file_name: P) -> Result<Config, Error> {
         toml::from_str(
             &std::fs::read_to_string(file_name).context("cannot read configuration file")?,
         )

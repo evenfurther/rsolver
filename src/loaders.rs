@@ -1,3 +1,5 @@
+#![allow(clippy::cast_sign_loss)]
+
 use crate::model::{Project, ProjectId, Student, StudentId};
 use anyhow::{Context, Error};
 use sqlx::any::{AnyConnectOptions, AnyRow};
@@ -115,6 +117,7 @@ impl Loader {
             .collect()
     }
 
+    #[allow(clippy::cast_possible_wrap)]
     pub async fn save_assignments(
         &mut self,
         assignments: &[(StudentId, ProjectId)],
