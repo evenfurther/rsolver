@@ -10,7 +10,7 @@ license = "Apache-2.0/MIT"
 anyhow = "1.0.57"
 clap = { version = "3.2", features = ["derive"] }
 csv = "1.1.6"
-pathfinding = "3.0.12"
+pathfinding = "4.1.1"
 rand = "0.8.5"
 serde = { version = "1.0.137", features = ["derive"] }
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "mysql", "macros", "offline", "any"] }
