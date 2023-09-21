@@ -1,7 +1,7 @@
 #![allow(clippy::cast_sign_loss)]
 
 use crate::model::{Project, ProjectId, Student, StudentId};
-use anyhow::{Context, Error};
+use eyre::Context;
 use sqlx::any::{AnyConnectOptions, AnyRow};
 use sqlx::{AnyConnection, Connection, Row};
 use std::collections::HashMap;
@@ -13,13 +13,13 @@ pub struct Loader {
 }
 
 impl Loader {
-    pub async fn new(s: &str) -> Result<Self, Error> {
+    pub async fn new(s: &str) -> eyre::Result<Self> {
         Ok(Self {
             conn: AnyConnection::connect_with(&AnyConnectOptions::from_str(s)?).await?,
         })
     }
 
-    pub async fn load(&mut self) -> Result<(Vec<Student>, Vec<Project>), Error> {
+    pub async fn load(&mut self) -> eyre::Result<(Vec<Student>, Vec<Project>)> {
         let projects = self.load_projects().await.context("cannot load projects")?;
         let mut students = self.load_students().await.context("cannot load students")?;
         let preferences = self
@@ -53,7 +53,7 @@ impl Loader {
         Ok((students, projects))
     }
 
-    async fn load_projects(&mut self) -> Result<Vec<Project>, Error> {
+    async fn load_projects(&mut self) -> eyre::Result<Vec<Project>> {
         sqlx::query("SELECT id, intitule, quota_min, quota_max, occurrences FROM projets")
             .map(|row: AnyRow| {
                 Ok(Project {
@@ -70,7 +70,7 @@ impl Loader {
             .collect()
     }
 
-    async fn load_students(&mut self) -> Result<Vec<Student>, Error> {
+    async fn load_students(&mut self) -> eyre::Result<Vec<Student>> {
         sqlx::query("SELECT id, prenom, nom FROM eleves")
             .map(|row: AnyRow| {
                 Ok(Student::new(
@@ -87,7 +87,7 @@ impl Loader {
             .collect()
     }
 
-    async fn load_bonuses(&mut self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+    async fn load_bonuses(&mut self) -> eyre::Result<Vec<(StudentId, ProjectId, i64)>> {
         sqlx::query("SELECT eleve_id, projet_id, poids FROM pref_override")
             .map(|row: AnyRow| {
                 Ok((
@@ -102,7 +102,7 @@ impl Loader {
             .collect()
     }
 
-    async fn load_preferences(&mut self) -> Result<Vec<(StudentId, ProjectId, i64)>, Error> {
+    async fn load_preferences(&mut self) -> eyre::Result<Vec<(StudentId, ProjectId, i64)>> {
         sqlx::query("SELECT eleve_id, projet_id, poids FROM preferences")
             .map(|row: AnyRow| {
                 Ok((
@@ -122,7 +122,7 @@ impl Loader {
         &mut self,
         assignments: &[(StudentId, ProjectId)],
         unassigned: &[StudentId],
-    ) -> Result<(), Error> {
+    ) -> eyre::Result<()> {
         let mut trans = self.conn.begin().await?;
         for (s, p) in assignments {
             sqlx::query("UPDATE eleves SET attribution=? WHERE id=?")

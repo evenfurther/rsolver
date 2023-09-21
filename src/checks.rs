@@ -1,5 +1,5 @@
 use crate::model::Assignments;
-use anyhow::{bail, Error};
+use eyre::bail;
 use tracing::warn;
 
 pub fn check_pinned_consistency(a: &Assignments) {
@@ -16,7 +16,7 @@ pub fn check_pinned_consistency(a: &Assignments) {
     }
 }
 
-pub fn ensure_acceptable(a: &Assignments) -> Result<(), Error> {
+pub fn ensure_acceptable(a: &Assignments) -> eyre::Result<()> {
     if let Some(unacceptable) = a
         .all_projects()
         .iter()

@@ -2,11 +2,11 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use crate::model::Assignments;
-use anyhow::{ensure, Context, Error};
 use clap::{
     ArgAction::{Count, SetFalse, SetTrue},
     Parser,
 };
+use eyre::{ensure, Context};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -65,7 +65,7 @@ pub struct SolverConfig {
 }
 
 impl Config {
-    fn load<P: AsRef<Path>>(file_name: P) -> Result<Config, Error> {
+    fn load<P: AsRef<Path>>(file_name: P) -> eyre::Result<Config> {
         toml::from_str(
             &std::fs::read_to_string(file_name).context("cannot read configuration file")?,
         )
@@ -74,7 +74,7 @@ impl Config {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> eyre::Result<()> {
     let options = Options::parse();
     let level = match options.verbosity {
         0 => Level::ERROR,

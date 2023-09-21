@@ -1,5 +1,5 @@
 use super::{Project, ProjectId, Student, StudentId};
-use anyhow::{ensure, Error};
+use eyre::ensure;
 use std::collections::HashMap;
 
 const PINNING_BONUS: i64 = 1000;
@@ -315,7 +315,7 @@ impl Assignments {
     }
 
     /// Check that there are enough seats for all students.
-    pub fn check_number_of_seats(&self, exclude_lazy: bool) -> Result<(), Error> {
+    pub fn check_number_of_seats(&self, exclude_lazy: bool) -> eyre::Result<()> {
         let seats = self
             .all_projects()
             .into_iter()
