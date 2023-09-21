@@ -1,0 +1,5 @@
+#TITLE: Register students to their preferred project
+
+* Objective
+
+This program assigns students who have ranked their projects by order of preference to the projects. It attempts minimization of students insatisfaction.
