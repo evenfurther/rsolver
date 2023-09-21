@@ -1,0 +1,155 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - renovate/**
+  merge_group:
+
+name: Continuous integration
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sh tests/check-msrv-consistency.sh
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-targets
+
+  cargo-deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: embarkStudios/cargo-deny-action@v1
+
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    needs: check
+    strategy:
+      matrix:
+        toolchain: [stable, beta, nightly, 1.65.0]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('Cargo.toml') }}
+      - uses: actions-rs/toolchain@v1
+        name: Install Rust toolchain
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        name: Test documentation in debug mode
+        with:
+          command: test
+          args: --doc
+      - uses: actions-rs/cargo@v1
+        name: Test documentation in release mode
+        with:
+          command: test
+          args: --doc --release
+      - uses: actions-rs/cargo@v1
+        name: Test in debug mode
+        with:
+          command: test
+          args: --tests --benches
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+      - uses: actions-rs/cargo@v1
+        name: Test in release mode
+        with:
+          command: test
+          args: --release --tests --benches
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+
+  test-minimal-versions:
+    name: Test with minimal versions
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-nightly-minimal-${{ hashFiles('Cargo.toml') }}
+      - uses: actions-rs/toolchain@v1
+        name: Install Rust toolchain
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - run: cargo update -Zminimal-versions
+        name: Set dependencies to the minimal version allowed
+      - uses: actions-rs/toolchain@v1
+        name: Install Rust toolchain
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        name: Test with minimal version dependencies
+        with:
+          command: test
+          args: --tests --benches
+        env:
+          TOOLCHAIN: stable
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D clippy::pedantic
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets -- -D warnings
