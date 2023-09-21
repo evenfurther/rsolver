@@ -1,4 +1,3 @@
 {
-    "extends": ["config:recommended", ":automergeMinor", ":automergeBranch"],
-    "rebaseWhen": "conflicted"
+  "extends": ["config:recommended", ":automergeMinor", ":automergeBranch"]
 }
