@@ -1,3 +1,8 @@
 [solver]
 database = mysql://rsolver:rsolver@localhost/rsolver
 algorithm = ordering
+
+[hungarian]
+# Weight is (rank * rank_mult) ^ rank_pow.
+rank_mult = 3
+rank_pow = 4
