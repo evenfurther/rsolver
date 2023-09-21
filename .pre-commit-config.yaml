@@ -19,7 +19,7 @@ repos:
         args: ['--fix=lf']
       - id: trailing-whitespace
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.2
+    rev: v2.2.5
     hooks:
       - id: codespell
         args: ['--ignore-words-list', 'crate,projets', '-S', '*.dump,*.json,*.txt']

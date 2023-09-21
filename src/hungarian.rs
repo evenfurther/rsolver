@@ -279,7 +279,7 @@ impl<'a> Hungarian<'a> {
             })
     }
 
-    /// Compute the assigments, without checking that we have enough for all students.
+    /// Compute the assignments, without checking that we have enough for all students.
     /// We just need to have enough for non-lazy students at this stage.
     #[instrument(skip_all)]
     fn do_assignments(&mut self) -> Result<(), Error> {
