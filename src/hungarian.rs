@@ -1,7 +1,7 @@
 #![allow(clippy::cast_possible_wrap)]
 
 use crate::model::{Assignments, ProjectId, StudentId};
-use anyhow::{bail, Error};
+use eyre::bail;
 use pathfinding::prelude::*;
 use serde::Deserialize;
 use std::collections::hash_map::HashMap;
@@ -17,7 +17,7 @@ pub struct Config {
 }
 
 #[instrument(skip_all)]
-pub fn assign(assignments: &mut Assignments, config: &Config) -> Result<(), Error> {
+pub fn assign(assignments: &mut Assignments, config: &Config) -> eyre::Result<()> {
     let start = Instant::now();
     // Check that we have enough open positions for all our students.
     assignments.check_number_of_seats(false)?;
@@ -282,7 +282,7 @@ impl<'a> Hungarian<'a> {
     /// Compute the assignments, without checking that we have enough for all students.
     /// We just need to have enough for non-lazy students at this stage.
     #[instrument(skip_all)]
-    fn do_assignments(&mut self) -> Result<(), Error> {
+    fn do_assignments(&mut self) -> eyre::Result<()> {
         // Check that we have enough projects for our non-lazy students.
         self.assignments.check_number_of_seats(true)?;
 

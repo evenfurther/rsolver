@@ -2,7 +2,6 @@
 
 use crate::model::{Assignments, StudentId};
 use crate::stats;
-use anyhow::Error;
 
 pub fn display_details(a: &Assignments, rename_lazy: bool) {
     let mut projects = a.filter_projects(|p| a.is_open(p));
@@ -189,7 +188,7 @@ pub fn display_missed_bonuses(a: &Assignments) {
     }
 }
 
-pub fn display_csv(a: &Assignments) -> Result<(), Error> {
+pub fn display_csv(a: &Assignments) -> eyre::Result<()> {
     let mut wtr = csv::Writer::from_writer(std::io::stdout());
     wtr.write_record(["last_name", "first_name", "project"])?;
     let mut projects = a.filter_projects(|p| a.is_open(p));
