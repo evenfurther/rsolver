@@ -128,14 +128,14 @@ impl Loader {
             sqlx::query("UPDATE eleves SET attribution=? WHERE id=?")
                 .bind(p.0 as i32)
                 .bind(s.0 as i32)
-                .execute(&mut trans)
+                .execute(&mut *trans)
                 .await
                 .context("cannot save attributions")?;
         }
         for s in unassigned {
             sqlx::query("UPDATE eleves SET attribution=NULL WHERE id=?")
                 .bind(s.0 as i32)
-                .execute(&mut trans)
+                .execute(&mut *trans)
                 .await
                 .context("cannot delete attribution for unassigned student")?;
         }
