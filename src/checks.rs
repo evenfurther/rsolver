@@ -4,7 +4,7 @@ use tracing::warn;
 
 pub fn check_pinned_consistency(a: &Assignments) {
     for s in a.all_students() {
-        if let Some(p) = a.rankings(s).get(0) {
+        if let Some(p) = a.rankings(s).first() {
             if a.is_pinned_for(s, *p) && a.project_for(s) != Some(*p) {
                 warn!(
                     student = %a.student(s),
