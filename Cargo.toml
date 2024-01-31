@@ -10,7 +10,7 @@ license = "Apache-2.0/MIT"
 clap = { version = "4.4", features = ["derive"] }
 color-eyre = "0.6.2"
 csv = "1.3.0"
-eyre = "0.6.11"
+eyre = "0.6.12"
 pathfinding = "4.8.2"
 rand = "0.8.5"
 serde = { version = "1.0.196", features = ["derive"] }
