@@ -5,7 +5,6 @@ use eyre::bail;
 use pathfinding::prelude::*;
 use serde::Deserialize;
 use std::collections::hash_map::HashMap;
-use std::isize;
 use std::iter;
 use std::time::Instant;
 use tracing::{debug, info, instrument, trace};
