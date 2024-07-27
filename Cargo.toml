@@ -15,7 +15,7 @@ eyre = "0.6.12"
 pathfinding = "4.9.1"
 rand = "0.8.5"
 serde = { version = "1.0.197", features = ["derive"] }
-sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "mysql", "macros", "any"] }
+sqlx = { version = "0.8.0", features = ["runtime-tokio-rustls", "mysql", "macros", "any"] }
 tokio = { version = "1.36.0", features = ["full"] }
 toml = "0.8.10"
 tracing = "0.1.40"
