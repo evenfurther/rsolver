@@ -70,7 +70,7 @@ struct Hungarian<'a> {
     weights: Matrix<i64>,
 }
 
-impl<'a> Hungarian<'a> {
+impl Hungarian<'_> {
     /// Return the weight for a student and a project.
     fn weight_of(&self, StudentId(student): StudentId, ProjectId(project): ProjectId) -> i64 {
         self.weights[(student, project)]
