@@ -239,7 +239,7 @@ impl Assignments {
 
     pub fn current_occurrences(&self, project: ProjectId) -> u32 {
         let max = self.max_students(project);
-        (self.students_for(project).len() as u32 + max - 1) / max
+        (self.students_for(project).len() as u32).div_ceil(max)
     }
 
     pub fn max_occurrences(&self, ProjectId(project): ProjectId) -> u32 {
