@@ -138,7 +138,7 @@ impl Assignments {
     pub fn is_pinned_for(&self, student: StudentId, project: ProjectId) -> bool {
         self.bonuses(student)
             .get(&project)
-            .map_or(false, |b| *b >= PINNING_BONUS)
+            .is_some_and(|b| *b >= PINNING_BONUS)
     }
 
     pub fn is_pinned_and_has_chosen(&self, student: StudentId, project: ProjectId) -> bool {
@@ -147,7 +147,7 @@ impl Assignments {
 
     pub fn is_currently_pinned(&self, student: StudentId) -> bool {
         self.project_for(student)
-            .map_or(false, |project| self.is_pinned_for(student, project))
+            .is_some_and(|project| self.is_pinned_for(student, project))
     }
 
     pub fn is_lazy(&self, StudentId(student): StudentId) -> bool {
