@@ -79,6 +79,7 @@ impl Config {
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
     let options = Options::parse();
     let level = match options.verbosity {
         0 => Level::ERROR,
