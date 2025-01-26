@@ -66,10 +66,14 @@ pub struct SolverConfig {
 
 impl Config {
     fn load<P: AsRef<Path>>(file_name: P) -> eyre::Result<Config> {
-        toml::from_str(
-            &std::fs::read_to_string(file_name).context("cannot read configuration file")?,
-        )
-        .context("invalid configuration file")
+        toml::from_str(&std::fs::read_to_string(&file_name).context(format!(
+            "cannot read configuration file `{}`",
+            file_name.as_ref().display()
+        ))?)
+        .context(format!(
+            "invalid configuration file `{}`",
+            file_name.as_ref().display()
+        ))
     }
 }
 
