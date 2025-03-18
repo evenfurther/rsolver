@@ -6,7 +6,7 @@ use clap::{
     ArgAction::{Count, SetFalse, SetTrue},
     Parser,
 };
-use eyre::{ensure, Context};
+use eyre::{Context, ensure};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
