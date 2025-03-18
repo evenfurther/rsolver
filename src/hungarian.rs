@@ -5,7 +5,6 @@ use eyre::bail;
 use pathfinding::prelude::*;
 use serde::Deserialize;
 use std::collections::hash_map::HashMap;
-use std::iter;
 use std::time::Instant;
 use tracing::{debug, info, instrument, trace};
 
@@ -46,7 +45,7 @@ fn compute_weights(a: &Assignments, rank_mult: i64, rank_pow: u32) -> Matrix<i64
             p,
             (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
         );
-        seats.extend(iter::repeat(p).take(n as usize));
+        seats.extend(std::iter::repeat_n(p, n as usize));
     }
     let large = i64::MAX / (1 + slen);
     let unregistered = large / (1 + slen);
@@ -97,7 +96,7 @@ impl Hungarian<'_> {
                 p,
                 (seats.len() as u32..seats.len() as u32 + n).collect::<Vec<_>>(),
             );
-            seats.extend(iter::repeat(p).take(n as usize));
+            seats.extend(std::iter::repeat_n(p, n as usize));
         }
         let large = i64::MAX / (1 + slen as i64);
         let mut prefs = Matrix::new(slen, seats.len(), large);
